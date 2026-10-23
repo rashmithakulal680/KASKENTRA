@@ -2,8 +2,9 @@
 
 The planner tries every combination of feasible actions that fits the available
 resources, re-simulates each one from the same starting conditions, and ranks the
-plans with the same transparent weights as the Intervention Lab. No AI is involved:
-every number comes from the rule-based simulator.
+plans with the same transparent weights as the Intervention Lab. No AI is involved
+in any number: every number comes from the rule-based simulator, and the best
+plan's score is recounted independently by app.verify.
 """
 
 from __future__ import annotations
@@ -14,7 +15,8 @@ from itertools import combinations
 from app.simulator import (SCORE_WEIGHTS, Intervention, Network, Scenario,
                            candidate_interventions, check_feasibility, hazard_profile,
                            damaged_assets, expedited_repair_hour, intervention_delay,
-                           simulate)
+                           service_loss_measure, simulate)
+from app.verify import verify_plan
 
 # Which resource each kind of action uses up.
 RESOURCE_USE = {"repair": "crews", "alternate": "crews", "backup": "generators"}
@@ -44,9 +46,10 @@ def describe(network: Network, scenario: Scenario, iv: Intervention) -> dict:
 
 
 def score(baseline_impact: dict, impact: dict, cost: int, budget: int) -> dict:
-    base_u = baseline_impact["total_unserved_service_person_hours"]
+    measure = service_loss_measure(baseline_impact)
+    base_u = baseline_impact[measure]
     base_c = baseline_impact["critical_facility_outage_hours"]
-    avoided_u = (base_u - impact["total_unserved_service_person_hours"]) / base_u if base_u else 0
+    avoided_u = (base_u - impact[measure]) / base_u if base_u else 0
     avoided_c = (base_c - impact["critical_facility_outage_hours"]) / base_c if base_c else 0
     cost_share = cost / budget if budget else (0 if cost == 0 else 1)
     return {"avoided_unserved_pct": round(100 * avoided_u, 1),
@@ -81,20 +84,24 @@ def plan_response(network: Network, scenario: Scenario, resources: Resources,
     baseline = simulate(network, scenario)
     feasible = [iv for iv in candidate_interventions(network, scenario, baseline)
                 if check_feasibility(network, scenario, iv) is None]
-    plans = []
-    checked = 0
+    candidates = []
     for size in range(0, min(MAX_ACTIONS, len(feasible)) + 1):
         for combo in combinations(feasible, size):
-            if not fits(combo, resources):
-                continue
-            checked += 1
-            plans.append(evaluate(network, scenario, combo, baseline.impact, resources))
+            if fits(combo, resources):
+                candidates.append((evaluate(network, scenario, combo, baseline.impact,
+                                            resources), combo))
     # Best score first; ties go to the cheaper plan, then the plan with fewer actions.
-    plans.sort(key=lambda p: (-p["score"], p["cost"], len(p["actions"]),
-                              [a["label"] for a in p["actions"]]))
+    candidates.sort(key=lambda c: (-c[0]["score"], c[0]["cost"], len(c[0]["actions"]),
+                                   [a["label"] for a in c[0]["actions"]]))
+    plans = [p for p, _ in candidates]
+    best_actions = candidates[0][1]
+    best_timeline = simulate(network, scenario, best_actions).timeline
     result = {"baseline_impact": baseline.impact, "resources": vars(resources),
-              "best": plans[0], "alternatives": plans[1:4], "plans_checked": checked,
-              "weights": SCORE_WEIGHTS}
+              "best": plans[0], "alternatives": plans[1:4], "plans_checked": len(plans),
+              "weights": SCORE_WEIGHTS,
+              "baseline_timeline": baseline.timeline, "best_timeline": best_timeline,
+              "verification": verify_plan(network, baseline.timeline, best_timeline,
+                                          best_actions, resources.budget, plans[0])}
     if previous:
         result["previous_plan"] = evaluate_previous(network, scenario, previous,
                                                     baseline.impact, resources)

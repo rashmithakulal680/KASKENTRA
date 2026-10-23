@@ -8,8 +8,9 @@ from pydantic import BaseModel, Field, field_validator
 
 from app import store
 from app.alerts import draft_warnings
-from app.data import build_network
+from app.data import build_network, data_note
 from app.planner import Resources, action_timing, plan_response
+from app.summary import facts_from_plan, summarise
 from app.simulator import (HAZARDS, FieldReport, Intervention, Scenario, candidate_interventions,
                            check_feasibility, default_repair_hour, explain, rank_options,
                            simulate)
@@ -17,7 +18,7 @@ from app.simulator import (HAZARDS, FieldReport, Intervention, Scenario, candida
 NETWORK = build_network()
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
-app = FastAPI(title="KASKENTRA", version="0.4.0")
+app = FastAPI(title="KASKENTRA", version="0.5.0")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
@@ -95,8 +96,7 @@ def index():
 def network():
     return {"assets": [vars(a) for a in NETWORK.assets.values()],
             "edges": [vars(e) for e in NETWORK.edges.values()],
-            "data_note": "Illustrative demo dataset (data/assets.csv, data/dependencies.csv); "
-                         "locations are example points, not real utility assets."}
+            "data_note": data_note()}
 
 
 @app.get("/api/hazards")
@@ -143,6 +143,16 @@ def plan(req: PlanRequest):
         previous.append(Intervention(a.kind, a.target, a.hours))
     return plan_response(NETWORK, scenario, Resources(req.crews, req.generators, req.budget),
                          tuple(previous))
+
+
+@app.post("/api/summary")
+def summary(req: PlanRequest):
+    """Briefing of the recommended plan. Numbers are computed first; the AI (if
+    configured) only words them, and any number it adds makes the text rejected."""
+    scenario = to_scenario(req)
+    result = plan_response(NETWORK, scenario, Resources(req.crews, req.generators, req.budget))
+    facts = facts_from_plan(NETWORK, scenario, result)
+    return {"facts": facts, **summarise(facts)}
 
 
 class DecisionModel(BaseModel):

@@ -5,13 +5,18 @@ utility assets. Edit data/assets.csv and data/dependencies.csv to model another 
 """
 
 import csv
+import os
 from pathlib import Path
 
 import networkx as nx
 
 from app.simulator import Asset, Edge, Network
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+ROOT = Path(__file__).resolve().parent.parent
+# KASKENTRA_DATA picks another dataset folder, e.g. data/real built from OpenStreetMap.
+DATA_DIR = (ROOT / os.environ["KASKENTRA_DATA"]) if os.environ.get("KASKENTRA_DATA") else ROOT / "data"
+DEMO_NOTE = ("Illustrative demo dataset (data/assets.csv, data/dependencies.csv); "
+             "locations are example points, not real utility assets.")
 ASSET_TYPES = {"substation", "pump", "treatment", "telecom", "hospital", "eoc", "shelter",
                "residential"}
 
@@ -26,7 +31,7 @@ def load_assets(path: Path = DATA_DIR / "assets.csv") -> dict[str, Asset]:
                 raise ValueError(f"{path.name}: duplicate asset id {row['id']}")
             assets[row["id"]] = Asset(
                 row["id"], row["name"], row["type"], row["service"], float(row["capacity"]),
-                int(row["people_served"]), int(row["backup_hours"]), int(row["repair_hours"]),
+                int(row["people_served"] or 0), int(row["backup_hours"]), int(row["repair_hours"]),
                 int(row["x"]), int(row["y"]), float(row["lat"]), float(row["lon"]), row["zone"])
     return assets
 
@@ -46,9 +51,17 @@ def load_edges(assets: dict[str, Asset],
     return edges
 
 
-def build_network() -> Network:
-    assets = load_assets()
-    edges = load_edges(assets)
+def data_note(data_dir: Path = DATA_DIR) -> str:
+    """First line of SOURCE.txt in the dataset folder, or the demo note."""
+    source = data_dir / "SOURCE.txt"
+    if source.exists():
+        return source.read_text(encoding="utf-8").splitlines()[0]
+    return DEMO_NOTE
+
+
+def build_network(data_dir: Path = DATA_DIR) -> Network:
+    assets = load_assets(data_dir / "assets.csv")
+    edges = load_edges(assets, data_dir / "dependencies.csv")
     graph = nx.DiGraph()
     graph.add_nodes_from(assets)
     graph.add_edges_from((e.supplier, e.dependent) for e in edges.values())

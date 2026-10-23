@@ -12,6 +12,7 @@ ADVICE = {
     "water supply interruption": "Store drinking water now.",
     "mobile network outage": "Save emergency numbers and keep calls short.",
     "emergency shelter unavailable": "Follow official instructions for alternative shelters.",
+    "limited hospital services": "For emergencies call 112 and check which hospital is open.",
 }
 
 
@@ -53,6 +54,8 @@ def problems(network, asset, result, window) -> list[tuple[str, int]]:
         return [("mobile network outage", window[0])]
     if asset.type == "shelter":
         return [("emergency shelter unavailable", window[0])]
+    if asset.type == "hospital":
+        return [("limited hospital services", window[0])]
     lost = service_losses(network, result, asset.id, window)
     found = [(SERVICE_WORDS[s], max(h, window[0])) for s, h in lost.items() if s in SERVICE_WORDS]
     return found or [("power cut", window[0])]
@@ -62,7 +65,8 @@ def draft_warnings(network: Network, scenario: Scenario, result: SimulationResul
     """One draft per zone; one sentence per problem, with the places and estimated hours."""
     zones: dict[str, dict[tuple, list[str]]] = {}
     for aid, asset in network.assets.items():
-        if asset.type not in ("residential", "telecom", "shelter") or aid in damaged_assets(scenario):
+        if (asset.type not in ("residential", "telecom", "shelter", "hospital")
+                or aid in damaged_assets(scenario)):
             continue
         window = outage_window(result, aid)
         if window is None:

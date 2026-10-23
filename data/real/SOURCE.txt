@@ -1,0 +1,3 @@
+Real locations and names from OpenStreetMap (51 hospitals, 13 substations, 1 telecom tower, 9 water facilities); connections, backup and repair times are assumptions, not utility data. Map data (c) OpenStreetMap contributors, ODbL.
+Built 2026-10-23 from data/osm_mangaluru.csv by tools/build_real_dataset.py.
+Assumed: every asset is powered by its nearest substation (straight line); a hospital gets water from the nearest water facility within 5 km; backup hours hospital 8, telecom 4, others 0; repair hours substation 24, hospital 24, water 12, telecom 8; no alternate supply lines; population unknown.

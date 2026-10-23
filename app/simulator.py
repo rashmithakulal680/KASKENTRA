@@ -287,10 +287,14 @@ def simulate(network: Network, scenario: Scenario,
         else:
             scheduled.append((intervention_delay(scenario, iv.kind), iv))
 
+    incoming: dict[str, list[Edge]] = {a: [] for a in assets}
+    for e in network.edges.values():
+        incoming[e.dependent].append(e)
+
     def missing_services(aid: str, prev: dict[str, str]) -> list[str]:
         needed: dict[str, bool] = {}
-        for e in network.edges.values():
-            if e.dependent != aid or not active[e.id]:
+        for e in incoming[aid]:
+            if not active[e.id]:
                 continue
             service = assets[e.supplier].service
             needed[service] = needed.get(service, False) or prev[e.supplier] != FAILED
@@ -306,6 +310,7 @@ def simulate(network: Network, scenario: Scenario,
     facility_hours: dict[str, int] = {}
     facility_first: dict[str, int] = {}
     critical_hours = 0
+    failed_asset_hours = 0
     recovery_hour = None
     peak_failed = sum(1 for s in status.values() if s == FAILED)
 
@@ -395,6 +400,7 @@ def simulate(network: Network, scenario: Scenario,
         for service, people in people_now.items():
             peak_people[service] = max(peak_people.get(service, 0), people)
         peak_failed = max(peak_failed, failed_now)
+        failed_asset_hours += failed_now
         if recovery_hour is None and all(s == OPERATIONAL for s in status.values()):
             recovery_hour = t
 
@@ -412,6 +418,8 @@ def simulate(network: Network, scenario: Scenario,
              "first_failed_hour": facility_first[aid], "outage_hours": facility_hours[aid]}
             for aid in sorted(facility_hours, key=lambda a: (facility_first[a], a))],
         "hazard_effect": hazard_profile(scenario.hazard).description,
+        "failed_asset_hours": failed_asset_hours,
+        "people_data": any(a.people_served for a in assets.values()),
         "affected_assets": affected_assets(network, scenario, result.timeline),
     }
     return result
@@ -447,9 +455,18 @@ def candidate_interventions(network: Network, scenario: Scenario,
     return options
 
 
+def service_loss_measure(baseline_impact: dict) -> str:
+    """People x hours without service when the dataset has population; otherwise
+    (e.g. OpenStreetMap locations, which carry no population) failed asset-hours."""
+    if baseline_impact.get("people_data", True):
+        return "total_unserved_service_person_hours"
+    return "failed_asset_hours"
+
+
 def rank_options(network: Network, baseline: SimulationResult, options: list[dict]) -> list[dict]:
     """Transparent weighted score; the no-action baseline competes on equal terms."""
-    base_unserved = baseline.impact["total_unserved_service_person_hours"]
+    measure = service_loss_measure(baseline.impact)
+    base_unserved = baseline.impact[measure]
     base_critical = baseline.impact["critical_facility_outage_hours"]
     rows = [{"label": "No action (baseline)", "kind": "baseline", "cost": 0,
              "feasible": True, "impact": baseline.impact}] + options
@@ -459,7 +476,7 @@ def rank_options(network: Network, baseline: SimulationResult, options: list[dic
             row["score"] = None
             continue
         impact = row["impact"]
-        avoided_unserved = ((base_unserved - impact["total_unserved_service_person_hours"])
+        avoided_unserved = ((base_unserved - impact[measure])
                             / base_unserved if base_unserved else 0)
         avoided_critical = ((base_critical - impact["critical_facility_outage_hours"])
                             / base_critical if base_critical else 0)

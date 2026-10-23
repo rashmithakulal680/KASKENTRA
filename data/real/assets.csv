@@ -1,0 +1,75 @@
+id,name,type,service,capacity,people_served,backup_hours,repair_hours,x,y,lat,lon,zone,osm
+HOS01,A B Shetty Memorial Institute of Dental Sciences,hospital,healthcare,0,,8,24,558,489,12.808421,74.888569,Area of Konaje,node/4681103423
+HOS02,A. J. Hospital and Research Centre,hospital,healthcare,0,,8,24,277,264,12.899385,74.84572,Area of Unnamed substation (OSM way/256638709),way/319584642
+HOS03,A.J.Hospital,hospital,healthcare,0,,8,24,281,266,12.898533,74.846276,Area of Unnamed substation (OSM way/256638709),relation/4441584
+HOS04,Athena Healthcare Pvt. Ltd.,hospital,healthcare,0,,8,24,293,342,12.868022,74.848177,Area of Unnamed substation (OSM way/357560182),node/2282371286
+HOS05,City Hospital Research and Diagnostic Center,hospital,healthcare,0,,8,24,326,313,12.87961,74.853175,Area of Kulashekara,node/1699693038
+HOS06,Colaco Hospital,hospital,healthcare,0,,8,24,348,330,12.87268,74.856509,Area of Unnamed substation (OSM way/357560182),way/219223242
+HOS07,"Diddy's Hospital, Ambedkar Circle",hospital,healthcare,0,,8,24,291,365,12.858608,74.847851,Area of Unnamed substation (OSM way/357560182),way/162235345
+HOS08,Dr. M. V. Shettys Hospital,hospital,healthcare,0,,8,24,236,359,12.86094,74.839547,Area of Unnamed substation (OSM way/357560182),node/6947499726
+HOS09,ECHS Polyclinic Mangalore,hospital,healthcare,0,,8,24,226,255,12.903102,74.8379,Area of Unnamed substation (OSM way/256638709),way/365238382
+HOS10,ESI Hospital,hospital,healthcare,0,,8,24,378,326,12.874175,74.861118,Area of Kulashekara,way/184750305
+HOS11,Echs Hospital,hospital,healthcare,0,,8,24,227,254,12.903564,74.83807,Area of Unnamed substation (OSM way/256638709),node/8188035996
+HOS12,Exservice Mens Hospital Service .. E C H S,hospital,healthcare,0,,8,24,226,258,12.901923,74.837974,Area of Unnamed substation (OSM way/256638709),node/8188036004
+HOS13,Father Muller Hospital,hospital,healthcare,0,,8,24,368,346,12.866224,74.859587,Area of Unnamed substation (OSM way/357560182),way/160151297
+HOS14,Fr Mullers Salvadore Monteiro Rural Health Training Centre,hospital,healthcare,0,,8,24,515,70,12.978043,74.881986,Area of Bajpe,node/8188038826
+HOS15,"Government Wenlock Hospital , Mangalore",hospital,healthcare,0,,8,24,259,344,12.866942,74.842925,Area of Unnamed substation (OSM way/357560182),way/132058594
+HOS16,Highland Hospital,hospital,healthcare,0,,8,24,336,346,12.866399,74.854664,Area of Unnamed substation (OSM way/357560182),node/308214432
+HOS17,Indiana Hospital and Heart Institute Ltd. - Mangalore,hospital,healthcare,0,,8,24,413,342,12.86768,74.866423,Area of Unnamed substation (OSM way/357560182),node/1699716589
+HOS18,Indira Hospital,hospital,healthcare,0,,8,24,305,341,12.868058,74.850068,Area of Unnamed substation (OSM way/357560182),node/2280989014
+HOS19,K S Hegde Hospital,hospital,healthcare,0,,8,24,555,490,12.80786,74.888027,Area of Konaje,node/6939006227
+HOS20,K S Hegde Medical College,hospital,healthcare,0,,8,24,525,485,12.809811,74.883477,Area of Konaje,node/8196804142
+HOS21,K. M. C. Hospital,hospital,healthcare,0,,8,24,295,332,12.871722,74.848481,Area of Unnamed substation (OSM way/357560182),node/6950343663
+HOS22,Kanachur Urban Health Centre,hospital,healthcare,0,,8,24,437,303,12.883471,74.870153,Area of Kulashekara,node/8188036044
+HOS23,Karnakaka Ayurveda Medical College Hospital,hospital,healthcare,0,,8,24,173,275,12.894854,74.82996,Area of Unnamed substation (OSM way/256638709),node/6938918899
+HOS24,Lady Goshan Hospital Mangalore,hospital,healthcare,0,,8,24,226,349,12.865051,74.837972,Area of Unnamed substation (OSM way/357560182),way/219223674
+HOS25,MIO Hospital,hospital,healthcare,0,,8,24,286,313,12.879692,74.847177,Area of Unnamed substation (OSM way/357560182),node/7213485807
+HOS26,Mangala Kidney Foundation,hospital,healthcare,0,,8,24,322,318,12.877622,74.852532,Area of Unnamed substation (OSM way/357560182),way/160262590
+HOS27,Medicity Polyclinic,hospital,healthcare,0,,8,24,328,342,12.867708,74.853444,Area of Unnamed substation (OSM way/357560182),node/1699731456
+HOS28,Nayana Nethralaya Eye Hospital,hospital,healthcare,0,,8,24,273,322,12.876071,74.845189,Area of Unnamed substation (OSM way/357560182),node/6938916238
+HOS29,Netaji - A Yellappa Memorial Hospital,hospital,healthcare,0,,8,24,365,471,12.815637,74.859122,Area of Unnamed substation (OSM way/357560182),node/6938777915
+HOS30,Parijma Institute of Neuro Sciences (PINS),hospital,healthcare,0,,8,24,324,342,12.867872,74.852884,Area of Unnamed substation (OSM way/357560182),node/12624734474
+HOS31,Port Hospital,hospital,healthcare,0,,8,24,74,156,12.943304,74.814758,Area of Unnamed substation (OSM way/256638741),way/230005032
+HOS32,Prasad Netralaya,hospital,healthcare,0,,8,24,228,296,12.886325,74.838223,Area of Unnamed substation (OSM way/256638709),node/2281265308
+HOS33,Prathiba Eye Hospital,hospital,healthcare,0,,8,24,318,314,12.879042,74.851988,Area of Unnamed substation (OSM way/357560182),node/6938918913
+HOS34,Rama Sakti Mission Charitable Hospital,hospital,healthcare,0,,8,24,460,273,12.895934,74.873682,Area of Kulashekara,way/355212060
+HOS35,SCS Hospital,hospital,healthcare,0,,8,24,338,326,12.874482,74.855092,Area of Unnamed substation (OSM way/357560182),way/239270568
+HOS36,"Sahara Hospital, Dakshina Kannada",hospital,healthcare,0,,8,24,367,462,12.819349,74.859459,Area of Unnamed substation (OSM way/357560182),node/6938536427
+HOS37,Sanjeevini Day Care,hospital,healthcare,0,,8,24,318,342,12.867663,74.851913,Area of Unnamed substation (OSM way/357560182),node/6938935958
+HOS38,Spandana Hospital And Institute Of Neuro Sciences,hospital,healthcare,0,,8,24,173,313,12.879593,74.829816,Area of Unnamed substation (OSM way/256638709),node/6939003557
+HOS39,Sri Dharmasthala Manjunatheshwara Eye Hospital,hospital,healthcare,0,,8,24,232,304,12.88311,74.83885,Area of Unnamed substation (OSM way/256638709),way/380340870
+HOS40,Srinivas Port Hospital,hospital,healthcare,0,,8,24,60,154,12.943829,74.81267,Area of Unnamed substation (OSM way/256638741),way/1468112354
+HOS41,Tara Hospital,hospital,healthcare,0,,8,24,239,338,12.869628,74.839904,Area of Unnamed substation (OSM way/357560182),node/8188036082
+HOS42,Tejaswini Hospital,hospital,healthcare,0,,8,24,330,311,12.880369,74.853769,Area of Kulashekara,node/6938770601
+HOS43,Unity Hospital,hospital,healthcare,0,,8,24,333,342,12.867628,74.854209,Area of Unnamed substation (OSM way/357560182),node/13055504366
+HOS44,University Medical Center (KMC),hospital,healthcare,0,,8,24,297,332,12.87199,74.848836,Area of Unnamed substation (OSM way/357560182),way/26564971
+HOS45,Urban Health Centre,hospital,healthcare,0,,8,24,302,366,12.858219,74.849533,Area of Unnamed substation (OSM way/357560182),node/3362118065
+HOS46,Vamanjoor Tuberculosis Hospital,hospital,healthcare,0,,8,24,620,201,12.924781,74.898034,Area of Gurupura,way/378247911
+HOS47,Vijaya Clinic General Hospital,hospital,healthcare,0,,8,24,292,322,12.876008,74.84805,Area of Unnamed substation (OSM way/357560182),node/6938880545
+HOS48,Vinaya nursing home,hospital,healthcare,0,,8,24,282,314,12.879114,74.846525,Area of Unnamed substation (OSM way/357560182),way/215833711
+HOS49,Vishal Children and Maternity Hospital,hospital,healthcare,0,,8,24,214,313,12.879396,74.83611,Area of Unnamed substation (OSM way/256638709),node/6937963277
+HOS50,Yenepoya Hospital,hospital,healthcare,0,,8,24,510,481,12.811646,74.881258,Area of Unnamed substation (OSM way/357560182),node/2272838845
+HOS51,Yenopaya Medical College Hospital,hospital,healthcare,0,,8,24,506,479,12.812225,74.88057,Area of Unnamed substation (OSM way/357560182),node/6944343600
+SUB01,Bajpe,substation,power,0,,0,24,415,73,12.976995,74.866722,Area of Bajpe,way/1192240709
+SUB02,Gurupura,substation,power,0,,0,24,780,146,12.947415,74.922424,Area of Gurupura,way/1192555185
+SUB03,Kavoor,substation,power,0,,0,24,374,199,12.92561,74.860539,Area of Kavoor,way/256638655
+SUB04,Konaje,substation,power,0,,0,24,840,465,12.817816,74.931505,Area of Konaje,way/385485161
+SUB05,Kulashekara,substation,power,0,,0,24,509,316,12.878233,74.881057,Area of Kulashekara,way/256638756
+SUB06,Unnamed substation (OSM way/1044294376),substation,power,0,,0,24,415,73,12.976995,74.866722,Area of Unnamed substation (OSM way/1044294376),way/1044294376
+SUB07,Unnamed substation (OSM way/1467381341),substation,power,0,,0,24,355,117,12.95907,74.857562,Area of Unnamed substation (OSM way/1467381341),way/1467381341
+SUB08,Unnamed substation (OSM way/1493508328),substation,power,0,,0,24,356,116,12.959205,74.857823,Area of Unnamed substation (OSM way/1493508328),way/1493508328
+SUB09,Unnamed substation (OSM way/256638696),substation,power,0,,0,24,126,198,12.926353,74.822661,Area of Unnamed substation (OSM way/256638696),way/256638696
+SUB10,Unnamed substation (OSM way/256638698),substation,power,0,,0,24,302,90,12.969916,74.849604,Area of Unnamed substation (OSM way/256638698),way/256638698
+SUB11,Unnamed substation (OSM way/256638709),substation,power,0,,0,24,77,258,12.901745,74.815257,Area of Unnamed substation (OSM way/256638709),way/256638709
+SUB12,Unnamed substation (OSM way/256638741),substation,power,0,,0,24,136,171,12.936943,74.824315,Area of Unnamed substation (OSM way/256638741),way/256638741
+SUB13,Unnamed substation (OSM way/357560182),substation,power,0,,0,24,404,375,12.854318,74.865103,Area of Unnamed substation (OSM way/357560182),way/357560182
+TEL01,Unnamed telecom tower (OSM node/13682645691),telecom,telecom,0,,4,8,284,92,12.96923,74.846768,Area of Unnamed substation (OSM way/256638698),node/13682645691
+WAT01,Ladyhill water tower,pump,water,0,,0,12,208,293,12.887811,74.835263,Area of Unnamed substation (OSM way/256638709),way/486953663
+WAT02,Overhead Water Tank,pump,water,0,,0,12,156,155,12.943788,74.827278,Area of Unnamed substation (OSM way/256638741),node/3358150575
+WAT03,Unnamed water facility (OSM node/5494255438),pump,water,0,,0,12,222,278,12.89396,74.837416,Area of Unnamed substation (OSM way/256638709),node/5494255438
+WAT04,Unnamed water facility (OSM way/1493247327),pump,water,0,,0,12,190,98,12.966553,74.832461,Area of Unnamed substation (OSM way/256638698),way/1493247327
+WAT05,Unnamed water facility (OSM way/1493247328),pump,water,0,,0,12,189,99,12.966435,74.832345,Area of Unnamed substation (OSM way/256638698),way/1493247328
+WAT06,Unnamed water facility (OSM way/1533003486),pump,water,0,,0,12,268,349,12.865128,74.844311,Area of Unnamed substation (OSM way/357560182),way/1533003486
+WAT07,Unnamed water facility (OSM way/1533003491),pump,water,0,,0,12,327,376,12.853906,74.853351,Area of Unnamed substation (OSM way/357560182),way/1533003491
+WAT08,Unnamed water facility (OSM way/1537925231),pump,water,0,,0,12,507,344,12.866956,74.880814,Area of Kulashekara,way/1537925231
+WAT09,Unnamed water facility (OSM way/1538919070),pump,water,0,,0,12,603,240,12.909271,74.895336,Area of Kulashekara,way/1538919070
