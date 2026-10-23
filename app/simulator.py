@@ -70,6 +70,9 @@ class Asset:
     repair_hours: int
     x: int
     y: int
+    lat: float = 0.0
+    lon: float = 0.0
+    zone: str = ""
 
 
 @dataclass(frozen=True)
@@ -406,8 +409,28 @@ def simulate(network: Network, scenario: Scenario,
              "first_failed_hour": facility_first[aid], "outage_hours": facility_hours[aid]}
             for aid in sorted(facility_hours, key=lambda a: (facility_first[a], a))],
         "hazard_effect": hazard_profile(scenario.hazard).description,
+        "affected_assets": affected_assets(network, scenario, result.timeline),
     }
     return result
+
+
+def affected_assets(network: Network, scenario: Scenario, timeline: list[dict]) -> list[dict]:
+    """Every asset that leaves normal operation: when it goes on backup, fails and recovers."""
+    rows = []
+    for aid, asset in network.assets.items():
+        states = [snap["states"][aid] for snap in timeline]
+        if all(s == OPERATIONAL for s in states):
+            continue
+        on_backup = next((t for t, s in enumerate(states) if s == ON_BACKUP), None)
+        failed = next((t for t, s in enumerate(states) if s == FAILED), None)
+        last_bad = max(t for t, s in enumerate(states) if s != OPERATIONAL)
+        restored = last_bad + 1 if last_bad + 1 < len(states) else None
+        rows.append({"id": aid, "name": asset.name, "type": asset.type, "zone": asset.zone,
+                     "service": asset.service, "critical": asset.type in CRITICAL_TYPES,
+                     "backup_hours": initial_backup_hours(network, scenario, aid),
+                     "on_backup_from": on_backup, "fails_at": failed, "restored_at": restored})
+    return sorted(rows, key=lambda r: (min(h for h in (r["on_backup_from"], r["fails_at"])
+                                          if h is not None), r["id"]))
 
 
 def candidate_interventions(network: Network, scenario: Scenario,

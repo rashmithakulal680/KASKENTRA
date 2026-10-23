@@ -6,8 +6,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from app import store
+from app.alerts import draft_warnings
 from app.data import build_network
-from app.planner import Resources, plan_response
+from app.planner import Resources, action_timing, plan_response
 from app.simulator import (HAZARDS, FieldReport, Intervention, Scenario, candidate_interventions,
                            check_feasibility, default_repair_hour, explain, rank_options,
                            simulate)
@@ -15,7 +17,7 @@ from app.simulator import (HAZARDS, FieldReport, Intervention, Scenario, candida
 NETWORK = build_network()
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
-app = FastAPI(title="KASKENTRA", version="0.3.0")
+app = FastAPI(title="KASKENTRA", version="0.4.0")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
@@ -84,7 +86,9 @@ def index():
 @app.get("/api/network")
 def network():
     return {"assets": [vars(a) for a in NETWORK.assets.values()],
-            "edges": [vars(e) for e in NETWORK.edges.values()]}
+            "edges": [vars(e) for e in NETWORK.edges.values()],
+            "data_note": "Illustrative demo dataset (data/assets.csv, data/dependencies.csv); "
+                         "locations are example points, not real utility assets."}
 
 
 @app.get("/api/hazards")
@@ -106,7 +110,8 @@ def compare(req: ScenarioRequest):
     options = []
     for iv in candidate_interventions(NETWORK, scenario, baseline):
         row = {"label": iv.label(NETWORK), "kind": iv.kind, "target": iv.target,
-               "cost": iv.cost, "feasible": True}
+               "hours": iv.hours, "cost": iv.cost, "feasible": True,
+               "timing": action_timing(NETWORK, scenario, iv)}
         reason = check_feasibility(NETWORK, scenario, iv)
         if reason:
             row.update(feasible=False, reason=reason)
@@ -130,3 +135,47 @@ def plan(req: PlanRequest):
         previous.append(Intervention(a.kind, a.target, a.hours))
     return plan_response(NETWORK, scenario, Resources(req.crews, req.generators, req.budget),
                          tuple(previous))
+
+
+class DecisionModel(BaseModel):
+    decision: Literal["approve", "reject"]
+    decided_by: str = Field(min_length=2, max_length=60)
+
+
+@app.post("/api/reports")
+def add_report(req: ScenarioRequest):
+    """Validate the newest field report against the scenario, then log it in the database."""
+    if not req.reports:
+        raise HTTPException(400, "no field report to add")
+    to_scenario(req)  # raises 400 if the new report does not fit the scenario
+    r = req.reports[-1]
+    return store.add_field_report(r.kind, r.asset, r.hour, r.hours)
+
+
+@app.get("/api/reports")
+def list_reports():
+    return store.list_field_reports()
+
+
+@app.post("/api/alerts/draft")
+def draft_alerts(req: ScenarioRequest):
+    """Create citizen-warning drafts for each affected zone; they wait for approval."""
+    scenario = to_scenario(req)
+    drafts = draft_warnings(NETWORK, scenario, simulate(NETWORK, scenario))
+    return [store.save_alert(d["zone"], d["message"], req.model_dump()) for d in drafts]
+
+
+@app.get("/api/alerts")
+def list_alerts():
+    return store.list_alerts()
+
+
+@app.post("/api/alerts/{alert_id}/decision")
+def decide(alert_id: int, req: DecisionModel):
+    alert = store.get_alert(alert_id)
+    if alert is None:
+        raise HTTPException(404, "warning draft not found")
+    decided = store.decide_alert(alert_id, req.decision, req.decided_by.strip())
+    if decided is None:
+        raise HTTPException(409, f"this draft is already {alert['status']}")
+    return decided

@@ -5,139 +5,172 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
 <title>KASKENTRA</title>
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<script src="/static/vendor/leaflet/leaflet.js"></script>
 <style>
-  body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f5f7fb;color:#22324a}
-  header{background:#351c75;color:#fff;padding:14px 24px}
-  header h1{margin:0;font-size:22px} header p{margin:4px 0 0;opacity:.85;font-size:14px}
-  main{display:grid;grid-template-columns:300px 1fr;gap:16px;padding:16px 24px}
-  .panel{background:#fff;border:1px solid #dde3ee;border-radius:10px;padding:14px}
-  h2{font-size:15px;margin:0 0 10px;color:#351c75;letter-spacing:.5px}
+  :root{--ink:#22324a;--muted:#59677b;--brand:#351c75;--teal:#0d9488;--line:#dde3ee;--soft:#f4f0fa}
+  *{box-sizing:border-box}
+  body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f5f7fb;color:var(--ink)}
+  header{background:var(--brand);color:#fff;padding:12px 24px}
+  header h1{margin:0;font-size:22px;letter-spacing:.5px}
+  header p{margin:3px 0 0;opacity:.88;font-size:13.5px}
+  .steps{display:flex;gap:6px;padding:12px 24px 0;flex-wrap:wrap}
+  .step{flex:1;min-width:150px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:13px;display:flex;gap:8px;align-items:center;text-align:left;color:var(--ink)}
+  .step b{display:inline-flex;width:24px;height:24px;border-radius:50%;background:#e2e8f0;color:var(--ink);align-items:center;justify-content:center;font-size:12px;flex:none}
+  .step.done b{background:#22c55e;color:#fff}
+  .step.active{border-color:var(--brand);box-shadow:0 0 0 2px #351c7522}
+  .step.active b{background:var(--brand);color:#fff}
+  main{display:grid;grid-template-columns:minmax(380px,1.05fr) 1fr;gap:16px;padding:12px 24px 24px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+  .mapcol{position:sticky;top:10px;align-self:start}
+  #map{height:520px;border-radius:8px;border:1px solid var(--line);background:#e8eef5}
+  #svgmap{width:100%;height:auto;display:none;background:#fbfcff;border-radius:8px}
+  h2{font-size:15px;margin:0 0 8px;color:var(--brand);letter-spacing:.3px}
+  h2 .num{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;align-items:center;justify-content:center;font-size:12px;margin-right:6px}
   label{display:block;font-size:13px;margin:8px 0 3px}
-  select,input{width:100%;box-sizing:border-box;padding:6px;border:1px solid #c9d2e0;border-radius:6px}
-  .assets{max-height:190px;overflow:auto;border:1px solid #e3e8f0;border-radius:6px;padding:6px;font-size:13px}
-  .assets label{display:flex;gap:6px;margin:3px 0;align-items:center}
-  .assets input{width:auto}
-  button{margin-top:12px;width:100%;padding:9px;border:0;border-radius:6px;background:#351c75;color:#fff;font-weight:600;cursor:pointer}
-  button.secondary{background:#0d9488}
-  svg{width:100%;height:auto;background:#fbfcff;border-radius:8px}
-  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
-  .metric{background:#f4f0fa;border-radius:8px;padding:10px}
-  .metric b{display:block;font-size:20px;color:#351c75} .metric span{font-size:12px;color:#59677b}
+  select,input{width:100%;padding:6px;border:1px solid #c9d2e0;border-radius:6px;font:inherit;font-size:13.5px}
+  button{padding:8px 12px;border:0;border-radius:6px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer;font:inherit;font-weight:600}
+  button.secondary{background:var(--teal)} button.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  button.danger{background:#991b1b} button:disabled{opacity:.5;cursor:not-allowed}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px} .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.45}
   table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
   th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e8edf5;vertical-align:top}
-  th{background:#f4f0fa;color:#351c75}
-  .tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600}
-  .operational{background:#dcfce7;color:#166534}.on_backup{background:#fef3c7;color:#92400e}
-  .failed{background:#fee2e2;color:#991b1b}.intervention{background:#ede9fe;color:#5b21b6}
-  .ledger{max-height:260px;overflow:auto}
+  th{background:var(--soft);color:var(--brand);font-weight:600}
+  .tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .ok{background:#dcfce7;color:#166534}.risk{background:#fef3c7;color:#92400e}.bad{background:#fee2e2;color:#991b1b}
+  .info{background:#ede9fe;color:#5b21b6}.field{background:#e0f2fe;color:#075985}
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .metric{background:var(--soft);border-radius:8px;padding:8px 10px}
+  .metric b{display:block;font-size:19px;color:var(--brand)} .metric span{font-size:12px;color:var(--muted)}
+  .player{display:flex;gap:10px;align-items:center;margin-top:10px}
+  .player input{flex:1}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-bottom:8px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
   .best{background:#ecfdf5}
-  .explain{background:#f4f0fa;border-radius:8px;padding:12px;font-size:14px;line-height:1.5}
-  .note{font-size:12px;color:#59677b;margin-top:10px}
-  #hour{margin:0;flex:1}
-  .player{display:flex;gap:10px;align-items:center;margin-top:8px}
-  button.small{width:auto;margin:0;padding:6px 14px}
-  button.ghost{background:#fff;color:#351c75;border:1px solid #351c75}
-  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#59677b;margin-bottom:6px}
-  .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
-  .legend i.dash{border-radius:0;width:16px;height:0;border-top:2px dashed #0d9488}
-  #critical table{margin-top:12px}
-  .metric small{display:block;font-size:11px;color:#59677b;margin-top:3px}
-  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end}
-  .row label{margin-top:0}
-  .row button{margin-top:0}
-  .plan-summary{background:#ecfdf5;border-radius:8px;padding:12px;font-size:14px;line-height:1.5;margin-top:10px}
-  .changed{background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:12px;font-size:14px;line-height:1.5;margin-top:12px}
+  .box{border-radius:8px;padding:12px;font-size:13.5px;line-height:1.5;margin-top:10px}
+  .box.green{background:#ecfdf5} .box.orange{background:#fff7ed;border:1px solid #fdba74} .box.purple{background:var(--soft)}
   .reports{list-style:none;padding:0;margin:8px 0 0}
-  .reports li{display:flex;justify-content:space-between;gap:8px;background:#f4f0fa;border-radius:6px;padding:6px 10px;margin-top:6px;font-size:13px}
-  .reports button{width:auto;margin:0;padding:2px 10px;background:#991b1b}
-  .field{background:#e0f2fe;color:#075985}
-  .basis{font-size:11px;color:#59677b}
-  @media (max-width:900px){.row{grid-template-columns:1fr 1fr}}
-  @media (max-width:900px){
-    main{grid-template-columns:1fr;padding:12px}
-    .metrics{grid-template-columns:repeat(2,1fr)}
-    table{display:block;overflow-x:auto}
-  }
+  .reports li{display:flex;justify-content:space-between;gap:8px;align-items:center;background:var(--soft);border-radius:6px;padding:6px 10px;margin-top:6px;font-size:13px}
+  .reports button{padding:2px 10px}
+  .alert{border:1px solid #fecaca;background:#fff5f5;border-radius:8px;padding:12px;margin-top:10px;font-size:13.5px;line-height:1.5}
+  .alert h3{margin:0 0 6px;font-size:14px;color:#991b1b}
+  details summary{cursor:pointer;color:var(--brand);font-weight:600;font-size:13px;margin-top:10px}
+  .scroll{max-height:260px;overflow:auto}
+  .pin{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px #0005;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1}
+  .pin.sel{outline:3px solid var(--brand);outline-offset:1px}
+  @media (max-width:980px){main{grid-template-columns:1fr}.mapcol{position:static}#map{height:380px}.grid4{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 <header>
   <h1>KASKENTRA</h1>
-  <p>When one failure becomes many - decision support for city control rooms. Simulated demo data; the planner decides.</p>
+  <p>When one failure becomes many: coordinating the response when critical city services fail. Decision support for disaster-management authorities and city control rooms. Demo data; the planner decides.</p>
 </header>
+
+<nav class="steps" id="steps">
+  <button class="step" data-step="1"><b>1</b>Infrastructure Map</button>
+  <button class="step" data-step="2"><b>2</b>Simulate a Failure</button>
+  <button class="step" data-step="3"><b>3</b>Impact Analysis</button>
+  <button class="step" data-step="4"><b>4</b>Response Planning</button>
+  <button class="step" data-step="5"><b>5</b>Field Update</button>
+  <button class="step" data-step="6"><b>6</b>Citizen-warning Drafts</button>
+</nav>
+
 <main>
-  <section class="panel">
-    <h2>SCENARIO</h2>
-    <label>Hazard</label>
-    <select id="hazard"><option>flood</option><option>storm</option><option>heatwave</option><option>fire</option><option>equipment fault</option></select>
-    <p class="note" id="hazardEffect"></p>
-    <label>Severity (affects repair time)</label>
-    <select id="severity"><option>low</option><option selected>medium</option><option>high</option></select>
-    <label>Horizon (hours)</label>
-    <input id="horizon" type="number" min="1" max="168" value="48">
-    <label>Initially failed assets</label>
-    <div class="assets" id="assetList"></div>
-    <button id="demo" class="ghost">Load demo: flood at North Substation</button>
-    <button id="run">Run simulation</button>
-    <button id="compare" class="secondary">Compare interventions</button>
-    <p class="note">Interventions are re-simulated from identical starting conditions and ranked with transparent weights (60% unserved service-hours, 30% critical facilities, 10% cost).</p>
-  </section>
-  <section>
+  <section class="mapcol">
     <div class="panel">
-      <h2>NETWORK STATE <span id="hourLabel" style="font-weight:400;color:#59677b"></span></h2>
-      <div class="legend"><span><i style="background:#22c55e"></i>Working</span><span><i style="background:#f59e0b"></i>On backup</span><span><i style="background:#ef4444"></i>Failed</span><span><i class="dash"></i>Alternate supply switched on</span></div>
-      <svg id="map" viewBox="0 0 900 540"></svg>
-      <div class="player"><button id="play" class="small">&#9654; Play</button><input id="hour" type="range" min="0" max="0" value="0"></div>
-      <div id="critical"></div>
-      <div class="metrics" id="metrics"></div>
+      <h2>CITY MAP <span id="hourLabel" style="font-weight:400;color:var(--muted)"></span></h2>
+      <div class="legend">
+        <span><i style="background:#22c55e"></i>Working</span><span><i style="background:#f59e0b"></i>On backup (at risk)</span>
+        <span><i style="background:#ef4444"></i>Failed</span><span><i style="background:#94a3b8;border-radius:0;height:3px"></i>Supply line</span>
+        <span><i style="background:#0d9488;border-radius:0;height:3px"></i>Alternate supply in use</span>
+      </div>
+      <div id="map"></div>
+      <svg id="svgmap" viewBox="0 0 900 540"></svg>
+      <div class="player"><button id="play" class="ghost">&#9654; Play</button><input id="hour" type="range" min="0" max="0" value="0"></div>
+      <p class="note" id="dataNote"></p>
     </div>
-    <div class="panel" style="margin-top:16px">
-      <h2>RESPONSE PLANNING</h2>
-      <div class="row">
-        <div><label>Extra crews available</label><input id="crews" type="number" min="0" max="10" value="2"></div>
-        <div><label>Generators available</label><input id="generators" type="number" min="0" max="10" value="2"></div>
+  </section>
+
+  <section>
+    <div class="panel" id="s1">
+      <h2><span class="num">1</span>INFRASTRUCTURE MAP</h2>
+      <p class="note" style="font-size:13px;color:var(--ink)">The map shows the critical assets of the demo city and the supply lines between them. Click any asset to see what it depends on and how long its backup lasts.</p>
+      <div class="metrics" id="inventory"></div>
+    </div>
+
+    <div class="panel" id="s2">
+      <h2><span class="num">2</span>SIMULATE A FAILURE</h2>
+      <div class="grid2">
+        <div><label>Substation at risk (or click it on the map)</label><select id="asset"></select></div>
+        <div><label>Cause</label><select id="hazard"></select></div>
+        <div><label>Severity (affects repair time)</label><select id="severity"><option>low</option><option selected>medium</option><option>high</option></select></div>
+        <div><label>Time window (hours)</label><input id="horizon" type="number" min="1" max="168" value="48"></div>
+      </div>
+      <p class="note" id="hazardEffect"></p>
+      <div class="actions"><button id="simulate">Simulate failure</button><button id="demo" class="ghost">Load demo: flood at North Substation</button></div>
+    </div>
+
+    <div class="panel" id="s3">
+      <h2><span class="num">3</span>IMPACT ANALYSIS</h2>
+      <div id="impactOut"><p class="note">Simulate a failure to see which services are affected.</p></div>
+    </div>
+
+    <div class="panel" id="s4">
+      <h2><span class="num">4</span>RESPONSE PLANNING</h2>
+      <div id="optionsOut"><p class="note">Simulate a failure first.</p></div>
+      <div class="grid4" style="margin-top:12px">
+        <div><label>Extra crews</label><input id="crews" type="number" min="0" max="10" value="2"></div>
+        <div><label>Generators</label><input id="generators" type="number" min="0" max="10" value="2"></div>
         <div><label>Budget (&#8377;)</label><input id="budget" type="number" min="0" step="5000" value="60000"></div>
-        <div><button id="planBtn">Plan response</button></div>
+        <div><button id="planBtn" class="secondary" style="width:100%">Recommend plan</button></div>
       </div>
       <div id="planOut"></div>
     </div>
-    <div class="panel" style="margin-top:16px">
-      <h2>FIELD UPDATE</h2>
-      <p class="note">Add what field teams confirm, then update the scenario. The plan is recalculated and compared with the previous one.</p>
-      <div class="row">
+
+    <div class="panel" id="s5">
+      <h2><span class="num">5</span>FIELD UPDATE</h2>
+      <p class="note">Add what field teams confirm. Each report is checked and saved in the database, then the scenario is recalculated and the plan is compared with the previous one.</p>
+      <div class="grid4">
         <div><label>Report</label><select id="repKind"><option value="repair_delayed">Repair delayed</option><option value="asset_down">Asset found failed</option><option value="backup_left">Backup left (hours)</option></select></div>
         <div><label>Asset</label><select id="repAsset"></select></div>
-        <div><label>Reported at hour</label><input id="repHour" type="number" min="1" max="168" value="3"></div>
+        <div><label>At hour</label><input id="repHour" type="number" min="1" max="168" value="2"></div>
         <div><label id="repHoursLabel">Delay (hours)</label><input id="repHours" type="number" min="0" max="168" value="6"></div>
       </div>
-      <div class="row" style="margin-top:10px">
-        <div><button id="addReportBtn" class="ghost">Add report</button></div>
-        <div><button id="replanBtn">Update scenario &amp; re-plan</button></div>
-      </div>
+      <div class="actions"><button id="addReportBtn" class="ghost">Add report</button><button id="replanBtn">Update scenario &amp; re-plan</button></div>
       <ul class="reports" id="reportList"></ul>
       <div id="changeOut"></div>
     </div>
-    <div class="panel" style="margin-top:16px">
-      <h2>EVIDENCE LEDGER</h2>
-      <div class="ledger"><table id="ledger"><thead><tr><th>#</th><th>Hour</th><th>Asset</th><th>Change</th><th>Cause</th><th>Rule</th><th>Basis</th></tr></thead><tbody></tbody></table></div>
-    </div>
-    <div class="panel" style="margin-top:16px" id="comparePanel" hidden>
-      <h2>INTERVENTION LAB</h2>
-      <table id="options"><thead><tr><th>Rank</th><th>Option</th><th>Service-hours lost (person-hours)</th><th>Critical facility outage hours</th><th>Full recovery</th><th>Cost (&#8377;)</th><th>Score</th></tr></thead><tbody></tbody></table>
-      <h2 style="margin-top:14px">EXPLANATION (template from ledger)</h2>
-      <div class="explain" id="explanation"></div>
+
+    <div class="panel" id="s6">
+      <h2><span class="num">6</span>CITIZEN-WARNING DRAFTS</h2>
+      <p class="note">Drafts are written for each affected zone from the simulation. Nothing is sent: each draft must be approved or rejected by an authorised person, and the decision is saved.</p>
+      <div class="grid2"><div><label>Your name (approver)</label><input id="approver" placeholder="e.g. Control room duty officer"></div>
+        <div style="display:flex;align-items:end"><button id="draftBtn" class="danger" style="width:100%">Generate warning drafts</button></div></div>
+      <div id="alertsOut"></div>
     </div>
   </section>
 </main>
+
 <script>
-const colors = {operational:"#22c55e", on_backup:"#f59e0b", failed:"#ef4444"};
-let network, hazards = {}, timeline = [], reports = [], lastPlan = null;
+const COLORS = {operational: "#22c55e", on_backup: "#f59e0b", failed: "#ef4444"};
+const ICONS = {substation: "&#9889;", pump: "&#128167;", treatment: "&#128167;", telecom: "&#128246;", hospital: "&#127973;",
+  eoc: "&#127970;", shelter: "&#9978;", residential: "&#127968;"};
+const TYPE_NAMES = {substation: "Substations", pump: "Pump stations", treatment: "Water treatment", telecom: "Mobile towers",
+  hospital: "Hospitals / clinics", eoc: "Emergency ops centre", shelter: "Shelters", residential: "Housing feeders"};
+let network, byId, hazards = {}, timeline = [], reports = [], lastPlan = null, lastImpact = null;
+let leaflet = null, markers = {}, lines = {};
+
+function esc(v) { return String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function money(n) { return Number(n).toLocaleString("en-IN"); }
+function hr(h) { return h === null || h === undefined ? "-" : "hour " + h; }
 
 async function api(path, body) {
-  const res = await fetch(path, body ? {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)} : {});
+  const res = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
   if (!res.ok) {
     const detail = (await res.json().catch(() => ({}))).detail;
-    // FastAPI returns a string for HTTPException and a list of {loc,msg} for validation errors.
     const msg = Array.isArray(detail) ? detail.map(d => `${d.loc.slice(1).join(".")}: ${d.msg}`).join("\n") : detail;
     throw new Error(msg || res.statusText);
   }
@@ -145,195 +178,269 @@ async function api(path, body) {
 }
 
 function scenario() {
-  const failed = [...document.querySelectorAll("#assetList input:checked")].map(i => i.value);
-  if (!failed.length) throw new Error("Select at least one asset to fail.");
-  return {hazard: hazard.value, severity: severity.value, horizon_hours: +horizon.value, failed_assets: failed, reports};
+  return {hazard: hazard.value, severity: severity.value, horizon_hours: +horizon.value, failed_assets: [asset.value], reports};
+}
+function resources() { return {crews: +crews.value, generators: +generators.value, budget: +budget.value}; }
+
+/* ---------- workflow steps ---------- */
+function mark(step, state) {
+  const el = document.querySelector(`.step[data-step="${step}"]`);
+  if (state === "done") el.classList.add("done");
+  if (state === "reset") el.classList.remove("done");
+  document.querySelectorAll(".step").forEach(s => s.classList.toggle("active", s.dataset.step === String(step)));
+}
+function resetFrom(step) { for (let s = step; s <= 6; s++) mark(s, "reset"); }
+
+/* ---------- map ---------- */
+function dependsOn(id) { return network.edges.filter(e => e.dependent === id && e.active).map(e => byId[e.supplier].name); }
+
+function popupHtml(a, st) {
+  const deps = dependsOn(a.id);
+  return `<b>${esc(a.name)}</b> (${esc(a.id)})<br>${esc(TYPE_NAMES[a.type] || a.type)} &middot; ${esc(a.zone)}<br>` +
+    `Status: <b>${(st || "operational").replace("_", " ")}</b><br>` +
+    (deps.length ? `Depends on: ${deps.map(esc).join(", ")}<br>` : "") +
+    `On-site backup: ${a.backup_hours ? a.backup_hours + " h" : "none"}` +
+    (a.people_served ? `<br>Serves about ${money(a.people_served)} people` : "") +
+    (a.type === "substation" ? `<br><i>Selected as the substation at risk in step 2</i>` : "");
 }
 
-function esc(v) { return String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-
-function drawMap(states, activeEdges) {
-  const byId = Object.fromEntries(network.assets.map(a => [a.id, a]));
-  const active = new Set(activeEdges || network.edges.filter(e => e.active).map(e => e.id));
-  let out = "";
+function initLeaflet() {
+  if (typeof L === "undefined") return false;
+  leaflet = L.map("map", {scrollWheelZoom: false, zoomSnap: 0.25});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 18,
+    attribution: "&copy; OpenStreetMap contributors"}).addTo(leaflet);
   for (const e of network.edges) {
-    if (!active.has(e.id)) continue;  // alternate links are hidden until switched on
     const s = byId[e.supplier], d = byId[e.dependent];
-    const alt = !e.active;
-    out += `<line x1="${s.x}" y1="${s.y}" x2="${d.x}" y2="${d.y}" stroke="${alt ? "#0d9488" : "#cbd5e1"}" stroke-width="${alt ? 2.2 : 1.3}" ${alt ? 'stroke-dasharray="6 4"' : ""}/>`;
+    lines[e.id] = L.polyline([[s.lat, s.lon], [d.lat, d.lon]], {weight: 2, color: "#94a3b8", opacity: e.active ? .8 : 0}).addTo(leaflet);
   }
   for (const a of network.assets) {
-    const st = states ? states[a.id] : "operational";
-    out += `<g><title>${esc(a.name)} (${esc(a.type)}) - ${st}</title><circle cx="${a.x}" cy="${a.y}" r="16" fill="${colors[st]}" stroke="#fff" stroke-width="2"/>
-      <text x="${a.x}" y="${a.y + 4}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${a.id}</text>
-      <rect x="${a.x - 58}" y="${a.y + 20}" width="116" height="14" rx="3" fill="#fbfcff" fill-opacity="0.9"/>
-      <text x="${a.x}" y="${a.y + 31}" text-anchor="middle" font-size="10" fill="#334155">${esc(a.name)}</text></g>`;
+    markers[a.id] = L.marker([a.lat, a.lon], {title: a.name}).addTo(leaflet)
+      .bindPopup(() => popupHtml(a, currentStates()[a.id]))
+      .on("click", () => { if (a.type === "substation") { asset.value = a.id; markSelected(); } });
   }
-  map.innerHTML = out;
+  leaflet.fitBounds(L.latLngBounds(network.assets.map(a => [a.lat, a.lon])).pad(0.05));
+  return true;
 }
 
-function showHour(t) {
-  const snap = timeline[t];
-  hourLabel.textContent = snap ? `- hour ${t}` : "";
-  drawMap(snap && snap.states, snap && snap.active_edges);
-}
+function currentStates() { const snap = timeline[+hour.value]; return snap ? snap.states : {}; }
 
-function money(n) { return n.toLocaleString(); }
+function markSelected() { draw(); }
 
-const SERVICE_LABEL = {residential: "Homes without power/water", telecom: "Mobile users without signal",
-  healthcare: "Patients at affected hospitals", shelter: "Shelter capacity lost", coordination: "Emergency staff affected"};
-
-async function run() {
-  try {
-    stop();
-    const r = await api("/api/simulate", scenario());
-    timeline = r.timeline;
-    hour.max = timeline.length - 1; hour.value = 0; showHour(0);
-    const i = r.impact;
-    const peak = Object.entries(i.peak_people_without_service_by_service)
-      .map(([k, v]) => `<div class="metric"><b>${money(v)}</b><span>${SERVICE_LABEL[k] || k} (peak)</span></div>`);
-    metrics.innerHTML = peak.concat([
-      `<div class="metric"><b>${i.critical_facilities_down.length}</b><span>Critical facilities that fail</span></div>`,
-      `<div class="metric"><b>${i.recovered_within_horizon ? "hour " + i.recovery_hour : "not within " + (timeline.length - 1) + "h"}</b><span>Full recovery</span></div>`]).join("");
-    critical.innerHTML = i.critical_facilities_down.length ? `<table><thead><tr><th>Critical facility</th><th>Fails at</th><th>Hours without service</th></tr></thead><tbody>` +
-      i.critical_facilities_down.map(f => `<tr><td>${esc(f.name)}</td><td>hour ${f.first_failed_hour}</td><td>${f.outage_hours}</td></tr>`).join("") + "</tbody></table>"
-      : '<p class="note">No critical facility loses service in this scenario.</p>';
-    document.querySelector("#ledger tbody").innerHTML = r.ledger.map(e =>
-      `<tr><td>${e.id}</td><td>${e.t}</td><td>${esc(e.asset_name)}</td><td><span class="tag ${e.type === "intervention" ? "intervention" : e.type === "field" ? "field" : e.to}">${e.type === "intervention" ? "intervention" : e.from === e.to ? "field report" : e.from + " -> " + e.to}</span></td><td>${esc(e.cause)}</td><td>${esc(e.rule)}</td><td class="basis">${e.basis}</td></tr>`).join("");
-    comparePanel.hidden = true;
-  } catch (err) { alert(err.message); }
+function draw() {
+  const snap = timeline[+hour.value];
+  const states = snap ? snap.states : {};
+  const active = new Set(snap ? snap.active_edges : network.edges.filter(e => e.active).map(e => e.id));
+  hourLabel.textContent = snap ? `- hour ${snap.t}` : "- before the incident";
+  if (leaflet) {
+    for (const a of network.assets) {
+      const st = states[a.id] || "operational";
+      const sel = a.id === asset.value ? " sel" : "";
+      markers[a.id].setIcon(L.divIcon({className: "", iconSize: [26, 26], iconAnchor: [13, 13],
+        html: `<div class="pin${sel}" style="background:${COLORS[st]}" title="${esc(a.name)}">${ICONS[a.type] || ""}</div>`}));
+    }
+    for (const e of network.edges) {
+      const on = active.has(e.id), alt = !e.active;
+      const supplierDown = states[e.supplier] === "failed";
+      lines[e.id].setStyle({opacity: on ? .85 : 0, color: alt ? "#0d9488" : supplierDown ? "#ef4444" : "#94a3b8",
+        weight: alt ? 4 : supplierDown ? 3 : 2, dashArray: alt ? "8 6" : null});
+    }
+  } else {
+    let out = "";
+    for (const e of network.edges) {
+      if (!active.has(e.id)) continue;
+      const s = byId[e.supplier], d = byId[e.dependent];
+      out += `<line x1="${s.x}" y1="${s.y}" x2="${d.x}" y2="${d.y}" stroke="${!e.active ? "#0d9488" : states[e.supplier] === "failed" ? "#ef4444" : "#cbd5e1"}" stroke-width="1.6"/>`;
+    }
+    for (const a of network.assets) {
+      out += `<g><title>${esc(a.name)}</title><circle cx="${a.x}" cy="${a.y}" r="16" fill="${COLORS[states[a.id] || "operational"]}" stroke="#fff" stroke-width="2"/>
+        <text x="${a.x}" y="${a.y + 4}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${a.id}</text>
+        <text x="${a.x}" y="${a.y + 31}" text-anchor="middle" font-size="10" fill="#334155">${esc(a.name)}</text></g>`;
+    }
+    svgmap.innerHTML = out;
+  }
 }
 
 let player = null;
 function stop() { if (player) { clearInterval(player); player = null; } play.innerHTML = "&#9654; Play"; }
 function togglePlay() {
   if (player) return stop();
-  if (+hour.value >= +hour.max) { hour.value = 0; showHour(0); }
+  if (!timeline.length) return;
+  if (+hour.value >= +hour.max) hour.value = 0;
   play.innerHTML = "&#10074;&#10074; Pause";
-  player = setInterval(() => {
-    if (+hour.value >= +hour.max) return stop();
-    hour.value = +hour.value + 1; showHour(+hour.value);
-  }, 350);
+  player = setInterval(() => { if (+hour.value >= +hour.max) return stop(); hour.value = +hour.value + 1; draw(); }, 300);
 }
 
-function showHazard() {
-  const h = hazards[hazard.value];
-  hazardEffect.textContent = h ? "Assumption: " + h : "";
+/* ---------- step 1 ---------- */
+function renderInventory() {
+  const counts = {};
+  network.assets.forEach(a => counts[a.type] = (counts[a.type] || 0) + 1);
+  const zones = [...new Set(network.assets.map(a => a.zone))];
+  inventory.innerHTML = Object.entries(counts).map(([t, n]) => `<div class="metric"><b>${ICONS[t]} ${n}</b><span>${TYPE_NAMES[t] || t}</span></div>`).join("") +
+    `<div class="metric"><b>${network.edges.filter(e => e.active).length}</b><span>Supply lines</span></div><div class="metric"><b>${zones.length}</b><span>Zones (${zones.join(", ")})</span></div>`;
 }
 
-function resources() {
-  return {crews: +crews.value, generators: +generators.value, budget: +budget.value};
+/* ---------- step 2 + 3 ---------- */
+async function simulateFailure(keepReports) {
+  stop();
+  if (!keepReports) { reports = []; renderReports(); lastPlan = null; planOut.innerHTML = ""; changeOut.innerHTML = ""; alertsOut.innerHTML = ""; resetFrom(2); }
+  const r = await api("/api/simulate", scenario());
+  timeline = r.timeline; lastImpact = r.impact;
+  hour.max = timeline.length - 1; hour.value = 0; draw();
+  renderImpact(r);
+  mark(2, "done"); mark(3, "done"); mark(3);
+  await loadOptions();
+  return r;
+}
+
+function statusOf(row) {
+  if (row.fails_at === 0) return `<span class="tag bad">Failed (incident)</span>`;
+  if (row.on_backup_from !== null && row.fails_at !== null) return `<span class="tag risk">At risk: backup until hour ${row.fails_at}</span>`;
+  if (row.on_backup_from !== null) return `<span class="tag risk">On backup, holds</span>`;
+  return `<span class="tag bad">Fails at hour ${row.fails_at}</span>`;
+}
+
+function renderImpact(r) {
+  const i = r.impact, rows = i.affected_assets;
+  const peak = i.peak_people_without_service_by_service;
+  const label = {residential: "Homes without supply", telecom: "Mobile users without signal", healthcare: "Patients at affected hospitals", shelter: "Shelter places lost", coordination: "Emergency staff affected"};
+  impactOut.innerHTML = `<p class="note">Cause: ${esc(hazard.value)} at ${esc(byId[asset.value].name)}. ${esc(i.hazard_effect)}</p>` +
+    `<table><thead><tr><th>Affected service</th><th>Zone</th><th>Backup time</th><th>Status</th><th>Restored</th></tr></thead><tbody>` +
+    rows.map(x => `<tr${x.critical ? ' style="font-weight:600"' : ""}><td>${ICONS[x.type] || ""} ${esc(x.name)}</td><td>${esc(x.zone)}</td><td>${x.backup_hours ? x.backup_hours + " h" : "none"}</td><td>${statusOf(x)}</td><td>${x.restored_at === null ? "after " + (timeline.length - 1) + " h" : hr(x.restored_at)}</td></tr>`).join("") +
+    `</tbody></table><div class="metrics">` +
+    Object.entries(peak).map(([k, v]) => `<div class="metric"><b>${money(v)}</b><span>${label[k] || k} (peak)</span></div>`).join("") +
+    `<div class="metric"><b>${i.critical_facilities_down.length}</b><span>Critical facilities that fail</span></div>` +
+    `<div class="metric"><b>${i.recovered_within_horizon ? hr(i.recovery_hour) : "not within " + (timeline.length - 1) + " h"}</b><span>Full recovery (no action)</span></div></div>` +
+    `<p class="note">Assumptions: rule-based simulation on demo data; hours are counted from the start of the incident. Bold rows are critical facilities. Press Play on the map to watch the failure spread.</p>` +
+    `<details><summary>Evidence ledger (${r.ledger.length} events): why each change happened</summary><div class="scroll"><table><thead><tr><th>Hour</th><th>Asset</th><th>Change</th><th>Cause</th><th>Rule</th><th>Basis</th></tr></thead><tbody>` +
+    r.ledger.map(e => `<tr><td>${e.t}</td><td>${esc(e.asset_name)}</td><td><span class="tag ${e.type === "intervention" ? "info" : e.type === "field" ? "field" : e.to === "failed" ? "bad" : e.to === "on_backup" ? "risk" : "ok"}">${e.from === e.to ? (e.type === "field" ? "field report" : "action") : e.from.replace("_", " ") + " &rarr; " + e.to.replace("_", " ")}</span></td><td>${esc(e.cause)}</td><td>${esc(e.rule)}</td><td>${e.basis}</td></tr>`).join("") +
+    `</tbody></table></div></details>`;
+}
+
+/* ---------- step 4 ---------- */
+async function loadOptions() {
+  const r = await api("/api/compare", scenario());
+  optionsOut.innerHTML = `<p class="note">Each option is re-simulated from the same starting point and scored (higher is better): ${60}% service-hours lost, ${30}% critical-facility outage, ${10}% cost.</p>` +
+    `<table><thead><tr><th>Option</th><th>Score</th><th>Takes effect</th><th>Cost (&#8377;)</th><th>Feasibility</th></tr></thead><tbody>` +
+    r.options.map(o => o.feasible
+      ? `<tr class="${o.rank === 1 ? "best" : ""}"><td>${o.rank}. ${esc(o.label)}</td><td>${o.score}</td><td>${o.timing ? esc(o.timing) : "-"}</td><td>${money(o.cost)}</td><td><span class="tag ok">Feasible</span></td></tr>`
+      : `<tr><td>${esc(o.label)}</td><td>-</td><td>${esc(o.timing || "-")}</td><td>${money(o.cost)}</td><td><span class="tag bad">Not feasible</span> ${esc(o.reason)}</td></tr>`).join("") +
+    `</tbody></table><p class="note">Single actions on their own. Use <b>Recommend plan</b> to combine actions within your crews, generators and budget.</p>`;
 }
 
 function facilities(impact) {
   const f = impact.critical_facilities_down;
-  return f.length ? f.map(x => `${esc(x.name)} fails at hour ${x.first_failed_hour} (${x.outage_hours}h without service)`).join("; ")
-    : "no critical facility loses service";
-}
-
-function planTable(p) {
-  if (!p.actions.length) return '<p class="note">No action fits the resources, or no action improves on doing nothing.</p>';
-  return `<table><thead><tr><th>Action</th><th>When</th><th>Uses</th><th>Cost (&#8377;)</th></tr></thead><tbody>` +
-    p.actions.map(a => `<tr><td>${esc(a.label)}</td><td>${esc(a.timing)}</td><td>1 ${a.uses === "crews" ? "crew" : "generator"}</td><td>${money(a.cost)}</td></tr>`).join("") + "</tbody></table>";
+  return f.length ? f.map(x => `${esc(x.name)} fails at hour ${x.first_failed_hour} (${x.outage_hours} h without service)`).join("; ") : "no critical facility loses service";
 }
 
 function renderPlan(r) {
   const b = r.best, base = r.baseline_impact;
-  planOut.innerHTML = planTable(b) + `<div class="plan-summary"><b>Recommended plan</b> (score ${b.score}, ${r.plans_checked} plans checked):
-    uses ${b.crews_used} of ${r.resources.crews} crews, ${b.generators_used} of ${r.resources.generators} generators and &#8377;${money(b.cost)} of &#8377;${money(r.resources.budget)}.
-    It avoids ${b.avoided_unserved_pct}% of lost service-hours and ${b.avoided_critical_pct}% of critical-facility outage hours compared with no action.<br>
-    <b>With this plan:</b> ${facilities(b.impact)}; full recovery ${b.impact.recovered_within_horizon ? "at hour " + b.impact.recovery_hour : "not within the horizon"}.<br>
-    <b>With no action:</b> ${facilities(base)}; full recovery ${base.recovered_within_horizon ? "at hour " + base.recovery_hour : "not within the horizon"}.</div>` +
-    (r.alternatives.length ? `<p class="note">Next best: ${r.alternatives.map(a => `${a.actions.length ? a.actions.map(x => esc(x.label)).join(" + ") : "no action"} (score ${a.score}, &#8377;${money(a.cost)})`).join(" &middot; ")}</p>` : "") +
-    `<p class="note">Weights: ${r.weights.unserved}% service-hours lost, ${r.weights.critical}% critical-facility outage, ${r.weights.cost}% cost. Rule-based simulation on demo data; the planner approves.</p>`;
+  const table = b.actions.length ? `<table><thead><tr><th>Action</th><th>When</th><th>Uses</th><th>Cost (&#8377;)</th></tr></thead><tbody>` +
+    b.actions.map(a => `<tr><td>${esc(a.label)}</td><td>${esc(a.timing)}</td><td>1 ${a.uses === "crews" ? "crew" : "generator"}</td><td>${money(a.cost)}</td></tr>`).join("") + "</tbody></table>"
+    : `<p class="note">No action fits the resources, or no action improves on doing nothing.</p>`;
+  planOut.innerHTML = `<div class="box green"><b>&#10004; Recommended plan</b> (score ${b.score}; ${r.plans_checked} combinations checked)${table}
+    Uses ${b.crews_used} of ${r.resources.crews} crews, ${b.generators_used} of ${r.resources.generators} generators and &#8377;${money(b.cost)} of &#8377;${money(r.resources.budget)}.
+    Avoids ${b.avoided_unserved_pct}% of lost service-hours and ${b.avoided_critical_pct}% of critical-facility outage hours compared with no action.<br>
+    <b>With this plan:</b> ${facilities(b.impact)}; full recovery ${b.impact.recovered_within_horizon ? "at hour " + b.impact.recovery_hour : "not within the time window"}.<br>
+    <b>With no action:</b> ${facilities(base)}; full recovery ${base.recovered_within_horizon ? "at hour " + base.recovery_hour : "not within the time window"}.</div>` +
+    (r.alternatives.length ? `<p class="note">Next best: ${r.alternatives.map(a => `${a.actions.length ? a.actions.map(x => esc(x.label)).join(" + ") : "no action"} (score ${a.score})`).join(" &middot; ")}</p>` : "") +
+    `<p class="note">The planner (a person) approves the plan. KASKENTRA does not control any infrastructure.</p>`;
 }
 
-async function planResponse() {
-  try {
-    const r = await api("/api/plan", Object.assign(scenario(), resources()));
-    lastPlan = r.best; renderPlan(r); changeOut.innerHTML = "";
-  } catch (err) { alert(err.message); }
+async function recommendPlan() {
+  const r = await api("/api/plan", Object.assign(scenario(), resources()));
+  lastPlan = r.best; renderPlan(r); changeOut.innerHTML = ""; mark(4, "done"); mark(4);
 }
 
+/* ---------- step 5 ---------- */
 const REPORT_TEXT = {
-  repair_delayed: r => `Hour ${r.hour}: repair of ${assetName(r.asset)} delayed by ${r.hours}h`,
-  asset_down: r => `Hour ${r.hour}: ${assetName(r.asset)} found failed`,
-  backup_left: r => `Hour ${r.hour}: ${assetName(r.asset)} has only ${r.hours}h of backup left`};
-function assetName(id) { return (network.assets.find(a => a.id === id) || {name: id}).name; }
+  repair_delayed: r => `Hour ${r.hour}: repair of ${byId[r.asset].name} delayed by ${r.hours} h`,
+  asset_down: r => `Hour ${r.hour}: ${byId[r.asset].name} found failed`,
+  backup_left: r => `Hour ${r.hour}: ${byId[r.asset].name} has only ${r.hours} h of backup left`};
 
 function renderReports() {
-  reportList.innerHTML = reports.map((r, i) => `<li><span>${esc(REPORT_TEXT[r.kind](r))}</span><button data-i="${i}">Remove</button></li>`).join("");
+  reportList.innerHTML = reports.map((r, i) => `<li><span>&#128203; ${esc(REPORT_TEXT[r.kind](r))}</span><button class="danger" data-i="${i}">Remove</button></li>`).join("");
   reportList.querySelectorAll("button").forEach(b => b.onclick = () => { reports.splice(+b.dataset.i, 1); renderReports(); });
 }
-
 function syncReportForm() {
   repHoursLabel.textContent = repKind.value === "backup_left" ? "Backup left (hours)" : "Delay (hours)";
   repHours.disabled = repKind.value === "asset_down";
 }
-
-function addReport() {
+async function addReport() {
   const r = {kind: repKind.value, asset: repAsset.value, hour: +repHour.value, hours: repKind.value === "asset_down" ? 0 : +repHours.value};
+  await api("/api/reports", Object.assign(scenario(), {reports: reports.concat([r])}));  // checked + saved
   reports.push(r); renderReports();
 }
-
 async function replan() {
-  if (!lastPlan) { alert("Run 'Plan response' first, so the new plan can be compared with it."); return; }
-  if (!reports.length) { alert("Add at least one field report first."); return; }
-  try {
-    const previous_plan = lastPlan.actions.map(a => ({kind: a.kind, target: a.target, hours: a.hours}));
-    const r = await api("/api/plan", Object.assign(scenario(), resources(), {previous_plan}));
-    await run();
-    const old = r.previous_plan, now = r.best;
-    const same = old.feasible && JSON.stringify(old.actions.map(a => a.target + a.kind)) === JSON.stringify(now.actions.map(a => a.target + a.kind));
-    let oldText = old.feasible
-      ? `Under the new conditions the previous plan scores ${old.score}: ${facilities(old.impact)}.`
-      : `The previous plan no longer works: ${old.problems.map(esc).join("; ")}.`;
-    renderPlan(r);
-    changeOut.innerHTML = `<div class="changed"><b>What changed after the field update</b><br>${oldText}<br>` +
-      (same ? `<b>The recommendation stays the same</b> (score ${now.score}).`
-            : `<b>New recommendation</b> (score ${now.score}): ${now.actions.length ? now.actions.map(a => esc(a.label)).join(" + ") : "no action"}; ${facilities(now.impact)}.`) + "</div>";
-    lastPlan = now;
-  } catch (err) { alert(err.message); }
+  if (!lastPlan) throw new Error("Click 'Recommend plan' in step 4 first, so the new plan can be compared with it.");
+  if (!reports.length) throw new Error("Add at least one field report first.");
+  const previous_plan = lastPlan.actions.map(a => ({kind: a.kind, target: a.target, hours: a.hours}));
+  const r = await api("/api/plan", Object.assign(scenario(), resources(), {previous_plan}));
+  await simulateFailure(true);
+  const old = r.previous_plan, now = r.best;
+  const same = old.feasible && JSON.stringify(old.actions.map(a => a.kind + a.target)) === JSON.stringify(now.actions.map(a => a.kind + a.target));
+  renderPlan(r);
+  changeOut.innerHTML = `<div class="box orange"><b>What changed after the field update</b><br>` +
+    (old.feasible ? `Under the new conditions the previous plan scores ${old.score}: ${facilities(old.impact)}.` : `The previous plan no longer works: ${old.problems.map(esc).join("; ")}.`) + "<br>" +
+    (same ? `<b>The recommendation stays the same</b> (score ${now.score}).`
+          : `<b>New recommendation</b> (score ${now.score}): ${now.actions.length ? now.actions.map(a => esc(a.label)).join(" + ") : "no action"}; ${facilities(now.impact)}.`) +
+    `<br><span class="note">Map, impact table and options above now include the field reports.</span></div>`;
+  lastPlan = now; mark(4, "done"); mark(5, "done"); mark(5);
 }
 
-function loadDemo() {
-  reports = []; renderReports(); lastPlan = null; planOut.innerHTML = ""; changeOut.innerHTML = "";
-  hazard.value = "flood"; severity.value = "medium"; horizon.value = 48; showHazard();
-  document.querySelectorAll("#assetList input").forEach(i => { i.checked = i.value === "S1"; });
-  run().then(togglePlay);
+/* ---------- step 6 ---------- */
+function alertCard(a) {
+  const pending = a.status === "pending approval";
+  const tag = pending ? "risk" : a.status === "approved" ? "ok" : "bad";
+  return `<div class="alert" data-id="${a.id}"><h3>&#9888; Draft public alert &middot; ${esc(a.zone)} <span class="tag ${tag}">${esc(a.status)}</span></h3>${esc(a.message)}` +
+    (pending ? `<div class="actions"><button data-id="${a.id}" data-d="approve" class="secondary">Approve</button><button data-id="${a.id}" data-d="reject" class="ghost">Reject</button></div>`
+             : `<p class="note">${esc(a.status)} by ${esc(a.decided_by)} at ${esc(a.decided_at)} UTC (saved in the database).</p>`) + `</div>`;
+}
+async function showAlerts(list) {
+  alertsOut.innerHTML = list.length ? list.map(alertCard).join("") : `<p class="note">No zone loses public services in this scenario, so there is nothing to warn about.</p>`;
+  alertsOut.querySelectorAll("button[data-id]").forEach(b => b.onclick = () => guard(async () => {
+    if (approver.value.trim().length < 2) throw new Error("Enter your name as the approver first.");
+    await api(`/api/alerts/${b.dataset.id}/decision`, {decision: b.dataset.d, decided_by: approver.value.trim()});
+    const shown = [...alertsOut.querySelectorAll(".alert")].map(el => +el.dataset.id);
+    const all = Object.fromEntries((await api("/api/alerts")).map(a => [a.id, a]));
+    await showAlerts(shown.map(id => all[id]).filter(Boolean));
+  }));
+}
+async function draftAlerts() {
+  const drafts = await api("/api/alerts/draft", scenario());
+  await showAlerts(drafts); mark(6, "done"); mark(6);
 }
 
-async function compare() {
-  try {
-    await run();
-    const r = await api("/api/compare", scenario());
-    document.querySelector("#options tbody").innerHTML = r.options.map(o => o.feasible
-      ? `<tr class="${o.rank === 1 ? "best" : ""}"><td>${o.rank}</td><td>${esc(o.label)}</td><td>${money(o.impact.total_unserved_service_person_hours)} (${o.avoided_unserved_pct}% avoided)</td><td>${o.impact.critical_facility_outage_hours}</td><td>${o.impact.recovered_within_horizon ? "hour " + o.impact.recovery_hour : "not within horizon"}</td><td>${money(o.cost)}</td><td>${o.score}</td></tr>`
-      : `<tr><td>-</td><td>${esc(o.label)}</td><td colspan="5"><span class="tag failed">infeasible</span> ${esc(o.reason)}</td></tr>`).join("");
-    explanation.textContent = r.explanation;
-    comparePanel.hidden = false;
-  } catch (err) { alert(err.message); }
+/* ---------- wiring ---------- */
+async function guard(fn) { try { await fn(); } catch (err) { alert(err.message); } }
+
+function showHazard() { hazardEffect.textContent = hazards[hazard.value] ? "Assumption: " + hazards[hazard.value] : ""; }
+
+async function loadDemo() {
+  asset.value = "S1"; hazard.value = "flood"; severity.value = "medium"; horizon.value = 48; showHazard();
+  await simulateFailure(false); togglePlay();
 }
 
 (async () => {
   network = await api("/api/network");
   hazards = await api("/api/hazards");
-  assetList.innerHTML = network.assets.map(a =>
-    `<label><input type="checkbox" value="${a.id}" ${a.id === "S1" ? "checked" : ""}> ${a.id} - ${a.name}</label>`).join("");
-  drawMap();
-  showHazard();
-  hazard.onchange = showHazard;
-  hour.oninput = () => { stop(); showHour(+hour.value); };
-  play.onclick = togglePlay;
-  document.getElementById("demo").onclick = loadDemo;
+  byId = Object.fromEntries(network.assets.map(a => [a.id, a]));
+  dataNote.textContent = network.data_note;
+  asset.innerHTML = network.assets.filter(a => a.type === "substation").map(a => `<option value="${a.id}">${esc(a.name)} (${esc(a.zone)})</option>`).join("");
+  hazard.innerHTML = Object.keys(hazards).map(h => `<option${h === "flood" ? " selected" : ""}>${esc(h)}</option>`).join("");
   repAsset.innerHTML = network.assets.map(a => `<option value="${a.id}">${a.id} - ${esc(a.name)}</option>`).join("");
-  repKind.onchange = syncReportForm; syncReportForm();
-  document.getElementById("addReportBtn").onclick = addReport;
-  document.getElementById("planBtn").onclick = planResponse;
-  document.getElementById("replanBtn").onclick = replan;
-  document.getElementById("run").onclick = run;
-  document.getElementById("compare").onclick = compare;
-  run();
+  if (!initLeaflet()) { document.getElementById("map").style.display = "none"; svgmap.style.display = "block"; }
+  renderInventory(); draw(); showHazard(); syncReportForm(); mark(1, "done"); mark(2);
+  asset.onchange = draw; hazard.onchange = showHazard; repKind.onchange = syncReportForm;
+  hour.oninput = () => { stop(); draw(); };
+  play.onclick = togglePlay;
+  document.getElementById("simulate").onclick = () => guard(() => simulateFailure(false));
+  demo.onclick = () => guard(loadDemo);
+  planBtn.onclick = () => guard(recommendPlan);
+  addReportBtn.onclick = () => guard(addReport);
+  replanBtn.onclick = () => guard(replan);
+  draftBtn.onclick = () => guard(draftAlerts);
+  document.querySelectorAll(".step").forEach(s => s.onclick = () => {
+    document.getElementById("s" + s.dataset.step).scrollIntoView({behavior: "smooth", block: "start"}); mark(s.dataset.step); });
 })();
 </script>
 </body>

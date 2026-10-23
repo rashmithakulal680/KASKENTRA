@@ -1,0 +1,21 @@
+id,name,type,service,capacity,people_served,backup_hours,repair_hours,x,y,lat,lon,zone
+S1,North Substation,substation,power,100,0,0,24,150,70,12.92,74.845,Zone A
+S2,South Substation,substation,power,100,0,0,24,450,70,12.845,74.858,Zone B
+S3,East Substation,substation,power,120,0,0,24,750,70,12.882,74.905,Zone C
+P1,North Pump Station,pump,water,30,0,0,12,150,170,12.912,74.838,Zone A
+P2,South Pump Station,pump,water,30,0,0,12,450,170,12.852,74.866,Zone B
+W1,Water Treatment Plant,treatment,water,60,0,2,36,750,170,12.875,74.897,Zone C
+T1,North Telecom Tower,telecom,telecom,0,15000,4,8,60,280,12.926,74.832,Zone A
+H1,City Hospital,hospital,healthcare,0,400,8,24,200,280,12.915,74.856,Zone A
+T2,South Telecom Tower,telecom,telecom,0,15000,4,8,380,280,12.838,74.85,Zone B
+H2,South Clinic,hospital,healthcare,0,150,12,24,520,280,12.85,74.848,Zone B
+C1,Emergency Ops Center,eoc,coordination,0,60,24,24,640,280,12.858,74.874,Zone B
+T3,East Telecom Tower,telecom,telecom,0,12000,6,8,800,280,12.89,74.912,Zone C
+SH1,North Shelter,shelter,shelter,0,800,0,12,150,390,12.906,74.848,Zone A
+SH2,East Shelter,shelter,shelter,0,600,0,12,750,390,12.87,74.908,Zone C
+R1,Northgate Feeder,residential,residential,0,9000,0,12,60,490,12.928,74.85,Zone A
+R2,Riverside Feeder,residential,residential,0,8000,0,12,200,490,12.908,74.832,Zone A
+R3,Southpark Feeder,residential,residential,0,9000,0,12,380,490,12.836,74.864,Zone B
+R4,Harbor Feeder,residential,residential,0,7000,0,12,520,490,12.843,74.872,Zone B
+R5,Eastfield Feeder,residential,residential,0,8000,0,12,700,490,12.888,74.898,Zone C
+R6,Hillcrest Feeder,residential,residential,0,6000,0,12,840,490,12.878,74.916,Zone C

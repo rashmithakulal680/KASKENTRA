@@ -1,7 +1,7 @@
 # Deploying KASKENTRA (free)
 
-The prototype is a FastAPI app that also serves its own HTML dashboard. It is stateless
-and needs no database or API keys, so it runs on free tiers.
+The prototype is a FastAPI app that also serves its own HTML dashboard. It needs no API keys and
+uses a local SQLite file for field reports and warning approvals, so it runs on free tiers.
 
 | Target | Cost | Sleeps when idle? | Notes |
 | --- | --- | --- | --- |
@@ -125,6 +125,12 @@ git push origin main
 | `500` on API calls but `/` works | Open **Deployments -> latest -> Functions** for the traceback. |
 | Repo not visible in Vercel import list | GitHub app permissions - grant Vercel access to `KASKENTRA`. |
 | Render URL takes ~40 s | Free instance waking up; expected. |
+
+## Database on free hosting
+
+KASKENTRA stores field reports and warning approvals in SQLite. On Vercel it uses `/tmp/kaskentra.db`,
+which is temporary and can be reset at any time, so records may disappear between requests on
+different servers. For a live demo, run locally (Option D), where `data/kaskentra.db` persists.
 
 ## Limits to remember
 
