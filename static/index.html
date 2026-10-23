@@ -579,10 +579,23 @@ const REPORT_TEXT = {
 function renderReports() {
   reportList.innerHTML = reports.map((r, i) => `<li><span>&#128203; ${esc(REPORT_TEXT[r.kind](r))}</span><button class="danger" data-i="${i}">Remove</button></li>`).join("");
   reportList.querySelectorAll("button").forEach(b => b.onclick = () => { reports.splice(+b.dataset.i, 1); renderReports(); });
+  syncReportForm();
+}
+/* Offer only assets the chosen report can apply to, so the form cannot send an impossible report:
+   repair delayed -> damaged assets (the failed substation and any asset reported failed);
+   asset found failed -> assets not already failed; backup left -> assets that have on-site backup. */
+function reportTargets(kind) {
+  const down = new Set([asset.value, ...reports.filter(r => r.kind === "asset_down").map(r => r.asset)]);
+  if (kind === "repair_delayed") return network.assets.filter(a => down.has(a.id));
+  if (kind === "asset_down") return network.assets.filter(a => !down.has(a.id));
+  return network.assets.filter(a => a.backup_hours > 0);
 }
 function syncReportForm() {
   repHoursLabel.textContent = repKind.value === "backup_left" ? "Backup left (hours)" : "Delay (hours)";
   repHours.disabled = repKind.value === "asset_down";
+  const keep = repAsset.value, list = reportTargets(repKind.value);
+  repAsset.innerHTML = list.map(a => `<option value="${a.id}">${a.id} - ${esc(a.name)}</option>`).join("");
+  if (list.some(a => a.id === keep)) repAsset.value = keep;
 }
 async function addReport() {
   const r = {kind: repKind.value, asset: repAsset.value, hour: +repHour.value, hours: repKind.value === "asset_down" ? 0 : +repHours.value};
@@ -679,7 +692,7 @@ async function loadDemo() {
   repAsset.innerHTML = network.assets.map(a => `<option value="${a.id}">${a.id} - ${esc(a.name)}</option>`).join("");
   if (!initLeaflet()) { document.getElementById("map").style.display = "none"; svgmap.style.display = "block"; }
   renderInventory(); draw(); showHazard(); syncReportForm(); mark(1, "done"); mark(2);
-  asset.onchange = draw; hazard.onchange = showHazard; repKind.onchange = syncReportForm;
+  asset.onchange = () => { draw(); syncReportForm(); }; hazard.onchange = showHazard; repKind.onchange = syncReportForm;
   budget.onchange = () => { if (timeline.length) guard(loadOptions); };
   window.addEventListener("resize", () => { if (leaflet) leaflet.invalidateSize(); });
   hour.oninput = () => { stop(); draw(); };

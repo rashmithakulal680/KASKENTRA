@@ -159,9 +159,9 @@ SYSTEM_PROMPT = (
     "causes or advice. Write exactly 3 short plain sentences, at most 60 words in total, "
     "no headings, no bullet points, no markdown, no preamble. Sentence 1: what failed and "
     "what happens with no action (recovery hour). Sentence 2: what the recommended plan "
-    "does, its cost, and the new recovery hour. Sentence 3: the loss avoided in percent, "
-    "then 'estimates; the duty officer approves'. If equally_good_plans is not empty, add "
-    "one more short sentence saying those plans score the same.")
+    "does, its cost, and the new recovery hour. Sentence 3: the percentage of loss the plan "
+    "avoids, and that these are estimates for the duty officer to approve. Do not mention "
+    "other or equally good plans; the screen lists those separately.")
 
 
 def call_groq(facts: dict, api_key: str, model: str) -> str:
