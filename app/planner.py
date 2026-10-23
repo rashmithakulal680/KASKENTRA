@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from itertools import combinations
 
 from app.simulator import (SCORE_WEIGHTS, Intervention, Network, Scenario,
-                           candidate_interventions, check_feasibility, hazard_profile,
+                           candidate_interventions, check_feasibility, cost_part, hazard_profile,
                            damaged_assets, expedited_repair_hour, intervention_delay,
                            service_loss_measure, simulate)
 from app.verify import verify_plan
@@ -51,12 +51,11 @@ def score(baseline_impact: dict, impact: dict, cost: int, budget: int) -> dict:
     base_c = baseline_impact["critical_facility_outage_hours"]
     avoided_u = (base_u - impact[measure]) / base_u if base_u else 0
     avoided_c = (base_c - impact["critical_facility_outage_hours"]) / base_c if base_c else 0
-    cost_share = cost / budget if budget else (0 if cost == 0 else 1)
     return {"avoided_unserved_pct": round(100 * avoided_u, 1),
             "avoided_critical_pct": round(100 * avoided_c, 1),
             "score": round(SCORE_WEIGHTS["unserved"] * avoided_u
                            + SCORE_WEIGHTS["critical"] * avoided_c
-                           + SCORE_WEIGHTS["cost"] * (1 - cost_share), 1)}
+                           + SCORE_WEIGHTS["cost"] * cost_part(cost, budget), 1)}
 
 
 def evaluate(network: Network, scenario: Scenario, actions: tuple[Intervention, ...],

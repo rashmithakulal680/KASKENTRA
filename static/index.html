@@ -23,21 +23,23 @@
   main{display:grid;grid-template-columns:minmax(380px,1.05fr) 1fr;gap:16px;padding:12px 24px 24px}
   .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
   .mapcol{position:sticky;top:10px;align-self:start}
-  #map{height:520px;border-radius:8px;border:1px solid var(--line);background:#e8eef5}
+  #map{height:clamp(340px,calc(100vh - 372px),520px);border-radius:8px;border:1px solid var(--line);background:#e8eef5}
   #svgmap{width:100%;height:auto;display:none;background:#fbfcff;border-radius:8px}
   h2{font-size:15px;margin:0 0 8px;color:var(--brand);letter-spacing:.3px}
   h2 .num{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;align-items:center;justify-content:center;font-size:12px;margin-right:6px}
   label{display:block;font-size:13px;margin:8px 0 3px}
   select,input{width:100%;padding:6px;border:1px solid #c9d2e0;border-radius:6px;font:inherit;font-size:13.5px}
-  button{padding:8px 12px;border:0;border-radius:6px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer;font:inherit;font-weight:600}
+  button{padding:8px 12px;border:0;border-radius:6px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer;font:inherit;font-weight:600;white-space:nowrap}
   button.secondary{background:var(--teal)} button.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
   button.danger{background:#991b1b} button:disabled{opacity:.5;cursor:not-allowed}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px} .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px} .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+  .grid3a{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:10px;align-items:end}
   .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .note{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.45}
   table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
   th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e8edf5;vertical-align:top}
-  th{background:var(--soft);color:var(--brand);font-weight:600}
+  th{background:var(--soft);color:var(--brand);font-weight:600;white-space:nowrap}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   .tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11.5px;font-weight:600;white-space:nowrap}
   .ok{background:#dcfce7;color:#166534}.risk{background:#fef3c7;color:#92400e}.bad{background:#fee2e2;color:#991b1b}
   .info{background:#ede9fe;color:#5b21b6}.field{background:#e0f2fe;color:#075985}
@@ -51,12 +53,20 @@
   .best{background:#ecfdf5}
   .box{border-radius:8px;padding:12px;font-size:13.5px;line-height:1.5;margin-top:10px}
   .box.green{background:#ecfdf5} .box.orange{background:#fff7ed;border:1px solid #fdba74} .box.purple{background:var(--soft)}
+  .box p{margin:4px 0} .box table{margin:8px 0}
+  .box ul,.alert ul,.brief ul{margin:6px 0 0;padding-left:18px} .box li,.alert li,.brief li{margin:2px 0}
+  .plan-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .plan-head .score-big{font-size:22px;font-weight:700;color:var(--brand);white-space:nowrap}
+  .plan-head .score-big small{font-size:12px;font-weight:400;color:var(--muted)}
   .reports{list-style:none;padding:0;margin:8px 0 0}
   .reports li{display:flex;justify-content:space-between;gap:8px;align-items:center;background:var(--soft);border-radius:6px;padding:6px 10px;margin-top:6px;font-size:13px}
   .reports button{padding:2px 10px}
   .alert{border:1px solid #fecaca;background:#fff5f5;border-radius:8px;padding:12px;margin-top:10px;font-size:13.5px;line-height:1.5}
-  .alert h3{margin:0 0 6px;font-size:14px;color:#991b1b}
+  .alert h3{margin:0 0 6px;font-size:14px;color:#991b1b;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .alert .cause{margin:6px 0 0;font-size:13px} .alert .advice{margin:6px 0 0;font-size:13px;color:#166534}
   details summary{cursor:pointer;color:var(--brand);font-weight:600;font-size:13px;margin-top:10px}
+  details.viz{border:1px solid var(--line);border-radius:8px;padding:0 12px 4px} details.viz summary{margin:8px 0}
+  details.viz[open]{padding-bottom:12px}
   .scroll{max-height:260px;overflow:auto}
   .pin{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px #0005;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1}
   .pin.sel{outline:3px solid var(--brand);outline-offset:1px}
@@ -85,7 +95,9 @@
   .score tr.total td{font-weight:700;border-top:2px solid var(--line)}
   .check{color:#166534;font-weight:700} .cross{color:#991b1b;font-weight:700}
   .brief{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;font-size:14px;line-height:1.55}
-  @media (max-width:980px){main{grid-template-columns:minmax(0,1fr)}.mapcol{position:static}#map{height:380px}.grid4{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}table{display:block;overflow-x:auto}}
+  .brief .head{display:flex;align-items:center;gap:8px;margin-bottom:4px} .brief p{margin:4px 0}
+  .nextbest{margin:10px 0 0;padding-left:18px;font-size:13px;color:var(--muted)} .nextbest li{margin:2px 0}
+  @media (max-width:980px){main{grid-template-columns:minmax(0,1fr)}.mapcol{position:static}#map{height:380px}.grid4,.grid3a{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}table{display:block;overflow-x:auto}}
 </style>
 </head>
 <body>
@@ -150,11 +162,11 @@
     <div class="panel" id="s4">
       <h2><span class="num">4</span>RESPONSE PLANNING</h2>
       <div id="optionsOut"><p class="note">Simulate a failure first.</p></div>
-      <div class="grid4" style="margin-top:12px">
+      <div class="grid3a" style="margin-top:12px">
         <div><label>Extra crews</label><input id="crews" type="number" min="0" max="10" value="2"></div>
         <div><label>Generators</label><input id="generators" type="number" min="0" max="10" value="2"></div>
         <div><label>Budget (&#8377;)</label><input id="budget" type="number" min="0" step="5000" value="60000"></div>
-        <div><button id="planBtn" class="secondary" style="width:100%">Recommend plan</button></div>
+        <div><button id="planBtn" class="secondary">Recommend plan</button></div>
       </div>
       <div id="planOut"></div>
     </div>
@@ -177,7 +189,7 @@
       <h2><span class="num">6</span>CITIZEN-WARNING DRAFTS</h2>
       <p class="note">Drafts are written for each affected zone from the simulation. Nothing is sent: each draft must be approved or rejected by an authorised person, and the decision is saved.</p>
       <div class="grid2"><div><label>Your name (approver)</label><input id="approver" placeholder="e.g. Control room duty officer"></div>
-        <div style="display:flex;align-items:end"><button id="draftBtn" class="danger" style="width:100%">Generate warning drafts</button></div></div>
+        <div style="display:flex;align-items:end"><button id="draftBtn" class="danger">Generate warning drafts</button></div></div>
       <div id="alertsOut"></div>
     </div>
   </section>
@@ -358,14 +370,15 @@ function renderImpact(r) {
 
 /* ---------- step 4 ---------- */
 async function loadOptions() {
-  const r = await api("/api/compare", scenario());
+  const r = await api("/api/compare", Object.assign(scenario(), {budget: +budget.value}));
   const lossName = lastImpact && lastImpact.people_data === false ? "asset-hours out of service" : "service-hours lost";
-  optionsOut.innerHTML = `<p class="note">Each option is re-simulated from the same starting point and scored (higher is better): 60% ${lossName}, 30% critical-facility outage, 10% cost.</p>` +
-    `<table><thead><tr><th>Option</th><th>Score</th><th>Takes effect</th><th>Cost (&#8377;)</th><th>Feasibility</th></tr></thead><tbody>` +
+  const w = r.weights || {unserved: 60, critical: 30, cost: 10};
+  optionsOut.innerHTML = `<p class="note">Each option is re-simulated from the same start and scored out of 100: ${w.unserved} for ${lossName} avoided, ${w.critical} for critical-facility outage avoided, ${w.cost} for budget left unspent. Same rule as the plan below.</p>` +
+    `<table><thead><tr><th>Option</th><th class="num">Score</th><th>Takes effect</th><th class="num">Cost (&#8377;)</th><th>Feasibility</th></tr></thead><tbody>` +
     r.options.map(o => o.feasible
-      ? `<tr class="${o.rank === 1 ? "best" : ""}"><td>${o.rank}. ${esc(o.label)}</td><td>${o.score}</td><td>${o.timing ? esc(o.timing) : "-"}</td><td>${money(o.cost)}</td><td><span class="tag ok">Feasible</span></td></tr>`
-      : `<tr><td>${esc(o.label)}</td><td>-</td><td>${esc(o.timing || "-")}</td><td>${money(o.cost)}</td><td><span class="tag bad">Not feasible</span> ${esc(o.reason)}</td></tr>`).join("") +
-    `</tbody></table><p class="note">Single actions on their own. Use <b>Recommend plan</b> to combine actions within your crews, generators and budget.</p>`;
+      ? `<tr class="${o.rank === 1 ? "best" : ""}"><td>${o.rank}. ${esc(o.label)}</td><td class="num">${o.score}</td><td>${o.timing ? esc(o.timing) : "-"}</td><td class="num">${money(o.cost)}</td><td><span class="tag ok">Feasible</span></td></tr>`
+      : `<tr><td>${esc(o.label)}</td><td class="num">-</td><td>${esc(o.timing || "-")}</td><td class="num">${money(o.cost)}</td><td><span class="tag bad">Not feasible</span> ${esc(o.reason)}</td></tr>`).join("") +
+    `</tbody></table><p class="note">Single actions on their own. <b>Recommend plan</b> combines them within your crews, generators and budget.</p>`;
 }
 
 /* ---------- plan vs no action: visuals ---------- */
@@ -440,8 +453,8 @@ function facilityChart(base, plan) {
   const rows = network.assets.filter(a => ["hospital", "shelter", "eoc"].includes(a.type) && firstBad(a.id) < Infinity)
     .map(a => a.id).sort((p, q) => firstBad(p) - firstBad(q) || byId[p].name.localeCompare(byId[q].name));
   if (!rows.length) return `<p class="note">No critical facility is affected in this scenario.</p>`;
-  const last = base.length - 1, W = 600, L = 8, R = 14, nameH = 16, barH = 13, gap = 4, block = nameH + 2 * barH + gap + 12;
-  const H = rows.length * block + 24, x = t => L + 70 + t / last * (W - L - 70 - R);
+  const last = base.length - 1, W = 600, L = 8, R = 14, LABEL = 96, nameH = 16, barH = 13, gap = 4, block = nameH + 2 * barH + gap + 12;
+  const H = rows.length * block + 24, x = t => L + 70 + t / last * (W - L - 70 - R - LABEL);
   let g = "";
   rows.forEach((id, i) => {
     const y0 = i * block;
@@ -456,7 +469,7 @@ function facilityChart(base, plan) {
         g += `<rect class="segbar" x="${x(s.from - 1) + 1}" y="${yb}" width="${Math.max(2, x(s.to) - x(s.from - 1) - 2)}" height="${barH}" rx="3" fill="${STATE_FILL[s.st]}"
           data-tip="<b>${esc(byId[id].name)}</b> &middot; ${word.toLowerCase()}<br>${STATE_WORD[s.st]}: hours ${s.from}&ndash;${s.to} (${s.to - s.from + 1} h)"/>`;
       });
-      g += `<text x="${W - R}" y="${yb + 10}" font-size="11" text-anchor="end" fill="#22324a">${down} h no service</text>`;
+      g += `<text x="${x(last) + 8}" y="${yb + 10}" font-size="11" fill="#22324a">${down} h no service</text>`;
     });
   });
   const ticks = []; for (let t = 0; t <= last; t += last > 36 ? 12 : 6) ticks.push(t);
@@ -493,54 +506,59 @@ function compareTable(base, best, measureLabel, measure) {
 /* How the score is built, and the independent recount. */
 function scorePanel(v) {
   const parts = v.parts.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.how)}</td><td class="num">${p.share_pct}%</td><td class="num">&times; ${p.weight}</td><td class="num">${p.points.toFixed(2)}</td></tr>`).join("");
-  const total = v.parts.reduce((n, p) => n + p.points, 0);
   const costs = v.cost_lines.length ? `<p class="note">Cost: ${v.cost_lines.map(c => `${esc(c.action)} = ${esc(c.how)}`).join("; ")}.</p>` : "";
   const checks = v.checks.map(c => `<tr><td>${esc(c.what)}</td><td class="num">${c.planner === null ? "-" : money(c.planner)}</td><td class="num">${c.recount === null ? "-" : money(c.recount)}</td><td>${c.match ? '<span class="check">&#10004; match</span>' : '<span class="cross">&#10008; differs</span>'}</td></tr>`).join("");
-  return `<details class="viz" open><summary>How the score ${v.score} is calculated ${v.all_match ? '<span class="tag ok">&#10004; independently rechecked</span>' : '<span class="tag bad">recheck failed</span>'}</summary>
-    <table class="score"><thead><tr><th>Part</th><th>Calculation</th><th>Share</th><th>Weight</th><th>Points</th></tr></thead><tbody>${parts}
-    <tr class="total"><td colspan="4">Score (out of 100, rounded to 1 decimal)</td><td class="num">${total.toFixed(2)} &rarr; ${v.score}</td></tr></tbody></table>${costs}
-    <p class="note">Recheck: the numbers below are counted again directly from the hour-by-hour map states (not from the planner's own counters), and the formula is applied again with exact fractions.</p>
-    <table class="score"><thead><tr><th>Value</th><th>Planner</th><th>Recount</th><th></th></tr></thead><tbody>${checks}</tbody></table></details>`;
+  return `<details class="viz"><summary>How the score ${v.score} is calculated ${v.all_match ? '<span class="tag ok">&#10004; independently rechecked</span>' : '<span class="tag bad">recheck failed</span>'}</summary>
+    <table class="score"><thead><tr><th>Part</th><th>Calculation</th><th class="num">Share</th><th class="num">Weight</th><th class="num">Points</th></tr></thead><tbody>${parts}
+    <tr class="total"><td colspan="4">Score out of 100</td><td class="num">${v.score}</td></tr></tbody></table>${costs}
+    <p class="note">Recheck: counted again from the hour-by-hour map states (not the planner's counters), formula applied again with exact fractions.</p>
+    <table class="score"><thead><tr><th>Value</th><th class="num">Planner</th><th class="num">Recount</th><th></th></tr></thead><tbody>${checks}</tbody></table></details>`;
 }
 
 async function loadSummary() {
   const box = document.getElementById("briefing"); if (!box) return;
-  box.innerHTML = `<p class="note">Writing briefing...</p>`;
+  box.innerHTML = `<div class="head"><b>Briefing</b></div><p class="note">Writing briefing...</p>`;
   try {
     const s = await api("/api/summary", Object.assign(scenario(), resources()));
     const tag = s.source === "ai" ? `<span class="tag info">AI-written &middot; numbers checked</span>` : `<span class="tag ok">Template</span>`;
-    box.innerHTML = `<b>Briefing</b> ${tag}<div style="margin-top:6px">${esc(s.text)}</div><p class="note">${esc(s.note)}</p>`;
-  } catch (err) { box.innerHTML = `<p class="note">Briefing not available: ${esc(err.message)}</p>`; }
+    const lines = (s.lines && s.lines.length ? s.lines : [s.text]).map(l => `<p>${esc(l)}</p>`).join("");
+    box.innerHTML = `<div class="head"><b>Briefing</b> ${tag}</div>${lines}<p class="note">${esc(s.note)}</p>`;
+  } catch (err) { box.innerHTML = `<div class="head"><b>Briefing</b></div><p class="note">Briefing not available: ${esc(err.message)}</p>`; }
 }
 
 function facilities(impact) {
   const f = impact.critical_facilities_down;
   return f.length ? f.map(x => `${esc(x.name)} fails at hour ${x.first_failed_hour} (${x.outage_hours} h without service)`).join("; ") : "no critical facility loses service";
 }
+function facilityList(impact) {
+  const f = impact.critical_facilities_down;
+  return f.length ? `<ul>${f.map(x => `<li>${esc(x.name)}: fails at hour ${x.first_failed_hour}, ${x.outage_hours} h without service</li>`).join("")}</ul>` : `<p>No critical facility loses service.</p>`;
+}
+function actionNames(p) { return p.actions.length ? p.actions.map(x => esc(x.label)).join(" + ") : "no action"; }
 
 let lastBase = null, lastBest = null, lastResources = null;
 function tieNote(r) {
   const ties = r.alternatives.filter(a => a.score === r.best.score);
   if (!ties.length) return "";
-  return `<div class="box orange"><b>Tie:</b> ${ties.map(a => a.actions.length ? a.actions.map(x => esc(x.label)).join(" + ") : "no action").join("; ")} ` +
-    `${ties.length > 1 ? "score" : "scores"} the same (${r.best.score}). The planner shows the cheaper one first, then the one with fewer actions, then alphabetical order, ` +
-    `so either choice is equally good by these rules; the duty officer can pick using local knowledge.</div>`;
+  return `<div class="box orange"><b>Tie:</b> ${ties.map(actionNames).join("; ")} ${ties.length > 1 ? "score" : "scores"} the same (${r.best.score}). ` +
+    `The cheaper plan is shown first, then the one with fewer actions; the duty officer can pick using local knowledge.</div>`;
 }
 function renderPlan(r) {
   const b = r.best, base = r.baseline_impact, v = r.verification;
   lastBase = base; lastBest = b; lastResources = r.resources;
-  const table = b.actions.length ? `<table><thead><tr><th>Action</th><th>When</th><th>Uses</th><th>Cost (&#8377;)</th></tr></thead><tbody>` +
-    b.actions.map(a => `<tr><td>${esc(a.label)}</td><td>${esc(a.timing)}</td><td>1 ${a.uses === "crews" ? "crew" : "generator"}</td><td>${money(a.cost)}</td></tr>`).join("") + "</tbody></table>"
+  const table = b.actions.length ? `<table><thead><tr><th>Action</th><th>When</th><th>Uses</th><th class="num">Cost (&#8377;)</th></tr></thead><tbody>` +
+    b.actions.map(a => `<tr><td>${esc(a.label)}</td><td>${esc(a.timing)}</td><td style="white-space:nowrap">1 ${a.uses === "crews" ? "crew" : "generator"}</td><td class="num">${money(a.cost)}</td></tr>`).join("") + "</tbody></table>"
     : `<p class="note">No action fits the resources, or no action improves on doing nothing.</p>`;
-  planOut.innerHTML = `<div class="box green"><b>&#10004; Recommended plan</b> (score ${b.score} of 100; ${r.plans_checked} combinations checked)${table}
-    Uses ${b.crews_used} of ${r.resources.crews} crews, ${b.generators_used} of ${r.resources.generators} generators and &#8377;${money(b.cost)} of &#8377;${money(r.resources.budget)}.</div>` +
+  const alts = r.alternatives.filter(a => a.score !== b.score);
+  planOut.innerHTML = `<div class="box green"><div class="plan-head"><b>&#10004; Recommended plan</b><span class="score-big">${b.score} <small>/ 100 &middot; ${r.plans_checked} combinations checked</small></span></div>${table}
+    <p>Uses ${b.crews_used} of ${r.resources.crews} crews, ${b.generators_used} of ${r.resources.generators} generators and &#8377;${money(b.cost)} of &#8377;${money(r.resources.budget)}.</p></div>` +
+    `<div class="brief" id="briefing"></div>` +
+    tieNote(r) +
     compareTable(base, b, v.measure_label, v.measure) +
     hourlyChart(r.baseline_timeline, r.best_timeline, base, b.impact) +
     facilityChart(r.baseline_timeline, r.best_timeline) +
     scorePanel(v) +
-    `<div class="brief" id="briefing"></div>` +
-    tieNote(r) +
-    (r.alternatives.length ? `<p class="note">Next best: ${r.alternatives.map(a => `${a.actions.length ? a.actions.map(x => esc(x.label)).join(" + ") : "no action"} (score ${a.score})`).join(" &middot; ")}</p>` : "") +
+    (alts.length ? `<details><summary>Next best plans</summary><ol class="nextbest">${alts.map(a => `<li>${actionNames(a)} &middot; score ${a.score}</li>`).join("")}</ol></details>` : "") +
     `<p class="note">The planner (a person) approves the plan. KASKENTRA does not control any infrastructure.</p>`;
   wireHourly(r.baseline_timeline, r.best_timeline); wireFacility();
   planTimeline = r.best_timeline; modeBar.hidden = false; setMapMode("plan");
@@ -580,19 +598,32 @@ async function replan() {
   const old = r.previous_plan, now = r.best;
   const same = old.feasible && JSON.stringify(old.actions.map(a => a.kind + a.target)) === JSON.stringify(now.actions.map(a => a.kind + a.target));
   renderPlan(r);
-  changeOut.innerHTML = `<div class="box orange"><b>What changed after the field update</b><br>` +
-    (old.feasible ? `Under the new conditions the previous plan scores ${old.score}: ${facilities(old.impact)}.` : `The previous plan no longer works: ${old.problems.map(esc).join("; ")}.`) + "<br>" +
-    (same ? `<b>The recommendation stays the same</b> (score ${now.score}).`
-          : `<b>New recommendation</b> (score ${now.score}): ${now.actions.length ? now.actions.map(a => esc(a.label)).join(" + ") : "no action"}; ${facilities(now.impact)}.`) +
-    `<br><span class="note">Map, impact table and options above now include the field reports.</span></div>`;
+  changeOut.innerHTML = `<div class="box orange"><b>What changed after the field update</b>` +
+    (old.feasible ? `<p><b>Previous plan</b> under the new conditions: score ${old.score}.</p>${facilityList(old.impact)}`
+                  : `<p><b>Previous plan no longer works:</b></p><ul>${old.problems.map(p => `<li>${esc(p)}</li>`).join("")}</ul>`) +
+    (same ? `<p><b>The recommendation stays the same</b> (score ${now.score}).</p>`
+          : `<p><b>New recommendation</b> (score ${now.score}): ${actionNames(now)}.</p>${facilityList(now.impact)}`) +
+    `<p class="note">Map, impact table and options above now include the field reports.</p></div>`;
   lastPlan = now; mark(4, "done"); mark(5, "done"); mark(5);
 }
 
 /* ---------- step 6 ---------- */
+/* The stored message is one paragraph; show it as problem lines, cause and advice. */
+function alertBody(zone, message) {
+  const text = message.startsWith(zone + ": ") ? message.slice(zone.length + 2) : message;
+  const sentences = text.split(/(?<=\.)\s+(?=[A-Z])/);
+  const problems = sentences.filter(s => s.startsWith("Possible "));
+  const cause = sentences.find(s => s.startsWith("Cause:"));
+  const rest = sentences.filter(s => !s.startsWith("Possible ") && s !== cause && !s.startsWith("Hours are counted"));
+  return (problems.length ? `<ul>${problems.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : `<p>${esc(text)}</p>`) +
+    (cause ? `<p class="cause">${esc(cause)}</p>` : "") +
+    (rest.length ? `<p class="advice">${esc(rest.join(" "))}</p>` : "") +
+    `<p class="note">Hours are counted from the start of the incident and are estimates.</p>`;
+}
 function alertCard(a) {
   const pending = a.status === "pending approval";
   const tag = pending ? "risk" : a.status === "approved" ? "ok" : "bad";
-  return `<div class="alert" data-id="${a.id}"><h3>&#9888; Draft public alert &middot; ${esc(a.zone)} <span class="tag ${tag}">${esc(a.status)}</span></h3>${esc(a.message)}` +
+  return `<div class="alert" data-id="${a.id}"><h3>&#9888; Draft public alert &middot; ${esc(a.zone)} <span class="tag ${tag}">${esc(a.status)}</span></h3>${alertBody(a.zone, a.message)}` +
     (pending ? `<div class="actions"><button data-id="${a.id}" data-d="approve" class="secondary">Approve</button><button data-id="${a.id}" data-d="reject" class="ghost">Reject</button></div>`
              : `<p class="note">${esc(a.status)} by ${esc(a.decided_by)} at ${esc(a.decided_at)} UTC (saved in the database).</p>`) + `</div>`;
 }
@@ -649,6 +680,8 @@ async function loadDemo() {
   if (!initLeaflet()) { document.getElementById("map").style.display = "none"; svgmap.style.display = "block"; }
   renderInventory(); draw(); showHazard(); syncReportForm(); mark(1, "done"); mark(2);
   asset.onchange = draw; hazard.onchange = showHazard; repKind.onchange = syncReportForm;
+  budget.onchange = () => { if (timeline.length) guard(loadOptions); };
+  window.addEventListener("resize", () => { if (leaflet) leaflet.invalidateSize(); });
   hour.oninput = () => { stop(); draw(); };
   play.onclick = togglePlay;
   document.getElementById("simulate").onclick = e => guard(() => simulateFailure(false), e.currentTarget);

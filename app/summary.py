@@ -27,7 +27,10 @@ ROOT = Path(__file__).resolve().parent.parent
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 DEFAULT_MODEL = "openai/gpt-oss-20b"
 TIMEOUT_S = 20
+MAX_SENTENCES = 4  # a briefing is read aloud in a control room; longer than this is noise
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z₹\d])")
+MARKDOWN = re.compile(r"[*_`#>]+|^\s*[-•]\s+", re.MULTILINE)
 
 
 def load_env_file(path: Path = ROOT / ".env") -> None:
@@ -83,35 +86,56 @@ def facts_from_plan(network, scenario, plan: dict) -> dict:
     }
 
 
-def template_summary(facts: dict) -> str:
-    """Fixed sentences filled with the computed numbers (always available)."""
+def template_lines(facts: dict) -> list[str]:
+    """Short fixed sentences filled with the computed numbers (always available)."""
     inc, base, plan = facts["incident"], facts["no_action"], facts["recommended_plan"]
 
     def recovery(h):
         return f"hour {h}" if h is not None else f"after hour {inc['time_window_hours']}"
 
-    def hospitals(items):
-        return "; ".join(f"{f['name']} down from hour {f['fails_at_hour']} for "
-                         f"{f['hours_without_service']} h" for f in items) or "none"
+    def critical(items):
+        if not items:
+            return "no critical facility loses service"
+        first = min(f["fails_at_hour"] for f in items)
+        names = ", ".join(f["name"] for f in items)
+        return f"{names} {'loses' if len(items) == 1 else 'lose'} service from hour {first}"
 
-    text = [f"{inc['cause'].capitalize()} ({inc['severity']}) at {', '.join(inc['failed'])}."]
-    text.append(f"With no action: {indian(base['loss'])} {facts['loss_measure']}, critical facilities "
-                f"{hospitals(base['critical_facilities'])}, full recovery at "
-                f"{recovery(base['full_recovery_hour'])}.")
+    lines = [f"{inc['cause'].capitalize()} ({inc['severity']}) at {', '.join(inc['failed'])}.",
+             f"No action: {critical(base['critical_facilities'])}; everything back at "
+             f"{recovery(base['full_recovery_hour'])}."]
     if plan["actions"]:
-        acts = "; ".join(f"{a['action']} ({a['when']})" for a in plan["actions"])
-        text.append(f"Recommended ({plan['combinations_checked']} combinations checked, "
-                    f"₹{indian(plan['total_cost_inr'])} of ₹{indian(plan['budget_inr'])}): {acts}.")
+        acts = "; ".join(a["action"] for a in plan["actions"])
+        lines.append(f"Plan (₹{indian(plan['total_cost_inr'])}): {acts}.")
+        same = ({f["name"] for f in plan["critical_facilities"]}
+                == {f["name"] for f in base["critical_facilities"]} and plan["critical_facilities"])
+        after = (f"the same facilities lose service from hour "
+                 f"{min(f['fails_at_hour'] for f in plan['critical_facilities'])}" if same
+                 else critical(plan["critical_facilities"]))
+        lines.append(f"With the plan: {after}; everything back at "
+                     f"{recovery(plan['full_recovery_hour'])}; {plan['loss_avoided_pct']}% less "
+                     f"{facts['loss_measure']}.")
         if plan["equally_good_plans"]:
-            text.append(f"Equally good by the score: {'; '.join(plan['equally_good_plans'])}.")
-        text.append(f"With the plan: {indian(plan['loss'])} {facts['loss_measure']} "
-                    f"({plan['loss_avoided_pct']}% less), critical facilities "
-                    f"{hospitals(plan['critical_facilities'])}, full recovery at "
-                    f"{recovery(plan['full_recovery_hour'])}.")
+            # name only the actions that differ from the chosen plan
+            chosen = {a["action"] for a in plan["actions"]}
+            swaps = [" + ".join(x for x in alt.split(" + ") if x not in chosen) or "no action"
+                     for alt in plan["equally_good_plans"]]
+            lines.append(f"Equally good by the score: {'; '.join(swaps)} instead.")
     else:
-        text.append("No affordable action improves on doing nothing.")
-    text.append("Estimates from a rule-based simulation; a duty officer approves any action.")
-    return " ".join(text)
+        lines.append("No affordable action improves on doing nothing.")
+    lines.append("Estimates from a rule-based simulation; the duty officer approves.")
+    return lines
+
+
+def template_summary(facts: dict) -> str:
+    return " ".join(template_lines(facts))
+
+
+def tidy_ai_text(text: str) -> str:
+    """Plain prose only: strip markdown, collapse whitespace, keep the first few sentences."""
+    text = MARKDOWN.sub("", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    sentences = SENTENCE_END.split(text)
+    return " ".join(sentences[:MAX_SENTENCES]).strip()
 
 
 def allowed_numbers(facts: dict) -> set[str]:
@@ -129,14 +153,15 @@ def unsupported_numbers(text: str, facts: dict) -> list[str]:
 
 
 SYSTEM_PROMPT = (
-    "You write short briefings for a city disaster control room in India. "
+    "You write a spoken briefing for a city disaster control room in India. "
     "Use ONLY the facts in the JSON you are given. Do not calculate anything new, do not "
     "round, and do not add any number that is not in the JSON. Do not invent places, "
-    "causes or advice. Write 4 to 6 plain sentences, no headings, no bullet points, no "
-    "markdown. Cover: what failed, what happens with no action, what the recommended plan "
-    "does and costs, and the difference in recovery time and hospital outage. If "
-    "equally_good_plans is not empty, say that those plans score the same. Say that "
-    "these are estimates and that a duty officer approves the plan.")
+    "causes or advice. Write exactly 3 short plain sentences, at most 60 words in total, "
+    "no headings, no bullet points, no markdown, no preamble. Sentence 1: what failed and "
+    "what happens with no action (recovery hour). Sentence 2: what the recommended plan "
+    "does, its cost, and the new recovery hour. Sentence 3: the loss avoided in percent, "
+    "then 'estimates; the duty officer approves'. If equally_good_plans is not empty, add "
+    "one more short sentence saying those plans score the same.")
 
 
 def call_groq(facts: dict, api_key: str, model: str) -> str:
@@ -146,7 +171,7 @@ def call_groq(facts: dict, api_key: str, model: str) -> str:
         "messages": [{"role": "system", "content": SYSTEM_PROMPT},
                      {"role": "user", "content": json.dumps(facts, ensure_ascii=False)}],
         "temperature": 0.2,
-        "max_completion_tokens": 900,
+        "max_completion_tokens": 400,
     }
     if model.startswith("openai/gpt-oss"):
         body["reasoning_effort"] = "low"
@@ -161,31 +186,32 @@ def call_groq(facts: dict, api_key: str, model: str) -> str:
 
 
 def summarise(facts: dict) -> dict:
-    """AI briefing when possible and safe; otherwise the template."""
-    template = template_summary(facts)
+    """AI briefing when possible and safe; otherwise the template.
+
+    `lines` is the briefing split into sentences for display; `text` is the same joined.
+    """
+    lines = template_lines(facts)
+    template = {"text": " ".join(lines), "lines": lines, "source": "template"}
     key = os.environ.get("GROQ_API_KEY", "").strip()
     model = os.environ.get("GROQ_MODEL", "").strip() or DEFAULT_MODEL
     if os.environ.get("KASKENTRA_AI", "").lower() == "off":
-        return {"text": template, "source": "template", "note": "AI switched off (KASKENTRA_AI=off)."}
+        return {**template, "note": "AI switched off (KASKENTRA_AI=off)."}
     if not key:
-        return {"text": template, "source": "template",
-                "note": "No GROQ_API_KEY set, so the fixed template was used."}
+        return {**template, "note": "No GROQ_API_KEY set, so the fixed template was used."}
     try:
-        text = call_groq(facts, key, model)
+        text = tidy_ai_text(call_groq(facts, key, model))
     except urllib.error.HTTPError as e:
-        return {"text": template, "source": "template",
-                "note": f"Groq returned HTTP {e.code}, so the fixed template was used."}
+        return {**template, "note": f"Groq returned HTTP {e.code}, so the fixed template was used."}
     except Exception as e:  # no internet, timeout, unexpected reply
-        return {"text": template, "source": "template",
-                "note": f"Groq could not be reached ({type(e).__name__}), so the fixed template was used."}
+        return {**template, "note": f"Groq could not be reached ({type(e).__name__}), "
+                                     f"so the fixed template was used."}
     if not text:
-        return {"text": template, "source": "template",
-                "note": "Groq returned an empty reply, so the fixed template was used."}
+        return {**template, "note": "Groq returned an empty reply, so the fixed template was used."}
     bad = unsupported_numbers(text, facts)
     if bad:
-        return {"text": template, "source": "template", "rejected_ai_text": text,
+        return {**template, "rejected_ai_text": text,
                 "note": f"AI text rejected: it contained {', '.join(bad)}, which is not in the "
                         f"computed results. The fixed template was used."}
-    return {"text": text, "source": "ai", "model": model,
+    return {"text": text, "lines": SENTENCE_END.split(text), "source": "ai", "model": model,
             "note": f"Written by {model} on Groq from the computed results; every number in it "
                     f"was checked against them."}

@@ -11,9 +11,9 @@ from app.alerts import draft_warnings
 from app.data import build_network, data_note
 from app.planner import Resources, action_timing, plan_response
 from app.summary import facts_from_plan, summarise
-from app.simulator import (HAZARDS, FieldReport, Intervention, Scenario, candidate_interventions,
-                           check_feasibility, default_repair_hour, explain, rank_options,
-                           simulate)
+from app.simulator import (HAZARDS, SCORE_WEIGHTS, FieldReport, Intervention, Scenario,
+                           candidate_interventions, check_feasibility, default_repair_hour,
+                           explain, rank_options, simulate)
 
 NETWORK = build_network()
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -48,6 +48,11 @@ class PlanRequest(ScenarioRequest):
     generators: int = Field(2, ge=0, le=10)
     budget: int = Field(60000, ge=0, le=10_000_000)
     previous_plan: list[ActionModel] = Field(default_factory=list, max_length=10)
+
+
+class CompareRequest(ScenarioRequest):
+    # Same budget as step 4, so a single option and the same action inside a plan score alike.
+    budget: int | None = Field(None, ge=0, le=10_000_000)
 
 
 def to_scenario(req: ScenarioRequest) -> Scenario:
@@ -112,7 +117,7 @@ def run_simulation(req: ScenarioRequest):
 
 
 @app.post("/api/compare")
-def compare(req: ScenarioRequest):
+def compare(req: CompareRequest):
     scenario = to_scenario(req)
     baseline = simulate(NETWORK, scenario)
     options = []
@@ -126,8 +131,10 @@ def compare(req: ScenarioRequest):
         else:
             row["impact"] = simulate(NETWORK, scenario, (iv,)).impact
         options.append(row)
-    ranked = rank_options(NETWORK, baseline, options)
+    ranked = rank_options(NETWORK, baseline, options, req.budget)
     return {"baseline_impact": baseline.impact, "options": ranked,
+            "weights": SCORE_WEIGHTS, "budget": req.budget,
+            "cost_basis": "share of the budget left" if req.budget else "most expensive option",
             "explanation": explain(NETWORK, scenario, baseline, ranked)}
 
 

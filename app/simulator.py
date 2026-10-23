@@ -463,14 +463,31 @@ def service_loss_measure(baseline_impact: dict) -> str:
     return "failed_asset_hours"
 
 
-def rank_options(network: Network, baseline: SimulationResult, options: list[dict]) -> list[dict]:
-    """Transparent weighted score; the no-action baseline competes on equal terms."""
+def cost_part(cost: int, budget: int | None, max_cost: int = 0) -> float:
+    """Share of the cost weight earned: 1 for free, 0 for spending the whole budget.
+
+    Without a budget the most expensive option on the table is the yardstick instead.
+    """
+    if budget:
+        return max(0.0, 1 - cost / budget)
+    if budget == 0:
+        return 1.0 if cost == 0 else 0.0
+    return 1 - cost / (max_cost or 1)
+
+
+def rank_options(network: Network, baseline: SimulationResult, options: list[dict],
+                 budget: int | None = None) -> list[dict]:
+    """Transparent weighted score; the no-action baseline competes on equal terms.
+
+    With a budget the cost part is the same rule the planner uses, so a single option
+    here and the same action inside a plan get the same cost points.
+    """
     measure = service_loss_measure(baseline.impact)
     base_unserved = baseline.impact[measure]
     base_critical = baseline.impact["critical_facility_outage_hours"]
     rows = [{"label": "No action (baseline)", "kind": "baseline", "cost": 0,
              "feasible": True, "impact": baseline.impact}] + options
-    max_cost = max((r["cost"] for r in rows if r["feasible"]), default=0) or 1
+    max_cost = max((r["cost"] for r in rows if r["feasible"]), default=0)
     for row in rows:
         if not row["feasible"]:
             row["score"] = None
@@ -484,7 +501,7 @@ def rank_options(network: Network, baseline: SimulationResult, options: list[dic
         row["avoided_critical_pct"] = round(100 * avoided_critical, 1)
         row["score"] = round(SCORE_WEIGHTS["unserved"] * avoided_unserved
                              + SCORE_WEIGHTS["critical"] * avoided_critical
-                             + SCORE_WEIGHTS["cost"] * (1 - row["cost"] / max_cost), 1)
+                             + SCORE_WEIGHTS["cost"] * cost_part(row["cost"], budget, max_cost), 1)
     feasible = sorted((r for r in rows if r["feasible"]), key=lambda r: -r["score"])
     for i, row in enumerate(feasible, 1):
         row["rank"] = i

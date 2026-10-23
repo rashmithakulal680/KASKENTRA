@@ -84,6 +84,25 @@ def test_konaje_single_option_scores_match_hand_calculation():
     assert scores["Send an extra crew to Konaje (repair done by hour 26)"] == 38.0
     assert scores["Deploy 12h backup power to A B Shetty"] == 14.6
     assert scores["No action (baseline)"] == 10.0
+    # with the step-4 budget the cost part is the planner's rule (share of budget left):
+    # crew: 24.89 + 13.13 + 10 x (1 - 40000/60000) = 41.35; generator: 5.33 + 3.75 + 7 = 16.08
+    with_budget = {row["label"]: row["score"] for row in rank_options(net, base, rows, 60000)}
+    assert with_budget["Send an extra crew to Konaje (repair done by hour 26)"] == 41.3
+    assert with_budget["Deploy 12h backup power to A B Shetty"] == 16.1
+    assert with_budget["No action (baseline)"] == 10.0
+
+
+def test_compare_api_uses_budget_cost_rule():
+    body = demo_request(budget=60000)
+    r = client.post("/api/compare", json=body).json()
+    assert r["weights"] == {"unserved": 60, "critical": 30, "cost": 10}
+    assert r["budget"] == 60000
+    plan = client.post("/api/plan", json=dict(body, crews=1, generators=0)).json()
+    # a one-action plan and the same single option must score identically
+    if len(plan["best"]["actions"]) == 1:
+        a = plan["best"]["actions"][0]
+        row = next(o for o in r["options"] if o.get("kind") == a["kind"] and o.get("target") == a["target"])
+        assert row["score"] == plan["best"]["score"]
 
 
 # ---------- independent recheck over many scenarios ----------
