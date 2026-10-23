@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>KASKENTRA</title>
+<style>
+  body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f5f7fb;color:#22324a}
+  header{background:#351c75;color:#fff;padding:14px 24px}
+  header h1{margin:0;font-size:22px} header p{margin:4px 0 0;opacity:.85;font-size:14px}
+  main{display:grid;grid-template-columns:300px 1fr;gap:16px;padding:16px 24px}
+  .panel{background:#fff;border:1px solid #dde3ee;border-radius:10px;padding:14px}
+  h2{font-size:15px;margin:0 0 10px;color:#351c75;letter-spacing:.5px}
+  label{display:block;font-size:13px;margin:8px 0 3px}
+  select,input{width:100%;box-sizing:border-box;padding:6px;border:1px solid #c9d2e0;border-radius:6px}
+  .assets{max-height:190px;overflow:auto;border:1px solid #e3e8f0;border-radius:6px;padding:6px;font-size:13px}
+  .assets label{display:flex;gap:6px;margin:3px 0;align-items:center}
+  .assets input{width:auto}
+  button{margin-top:12px;width:100%;padding:9px;border:0;border-radius:6px;background:#351c75;color:#fff;font-weight:600;cursor:pointer}
+  button.secondary{background:#0d9488}
+  svg{width:100%;height:auto;background:#fbfcff;border-radius:8px}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+  .metric{background:#f4f0fa;border-radius:8px;padding:10px}
+  .metric b{display:block;font-size:20px;color:#351c75} .metric span{font-size:12px;color:#59677b}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e8edf5;vertical-align:top}
+  th{background:#f4f0fa;color:#351c75}
+  .tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600}
+  .operational{background:#dcfce7;color:#166534}.on_backup{background:#fef3c7;color:#92400e}
+  .failed{background:#fee2e2;color:#991b1b}.intervention{background:#ede9fe;color:#5b21b6}
+  .ledger{max-height:260px;overflow:auto}
+  .best{background:#ecfdf5}
+  .explain{background:#f4f0fa;border-radius:8px;padding:12px;font-size:14px;line-height:1.5}
+  .note{font-size:12px;color:#59677b;margin-top:10px}
+  #hour{margin:0;flex:1}
+  .player{display:flex;gap:10px;align-items:center;margin-top:8px}
+  button.small{width:auto;margin:0;padding:6px 14px}
+  button.ghost{background:#fff;color:#351c75;border:1px solid #351c75}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#59677b;margin-bottom:6px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .legend i.dash{border-radius:0;width:16px;height:0;border-top:2px dashed #0d9488}
+  #critical table{margin-top:12px}
+  .metric small{display:block;font-size:11px;color:#59677b;margin-top:3px}
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end}
+  .row label{margin-top:0}
+  .row button{margin-top:0}
+  .plan-summary{background:#ecfdf5;border-radius:8px;padding:12px;font-size:14px;line-height:1.5;margin-top:10px}
+  .changed{background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:12px;font-size:14px;line-height:1.5;margin-top:12px}
+  .reports{list-style:none;padding:0;margin:8px 0 0}
+  .reports li{display:flex;justify-content:space-between;gap:8px;background:#f4f0fa;border-radius:6px;padding:6px 10px;margin-top:6px;font-size:13px}
+  .reports button{width:auto;margin:0;padding:2px 10px;background:#991b1b}
+  .field{background:#e0f2fe;color:#075985}
+  .basis{font-size:11px;color:#59677b}
+  @media (max-width:900px){.row{grid-template-columns:1fr 1fr}}
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;padding:12px}
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    table{display:block;overflow-x:auto}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>KASKENTRA</h1>
+  <p>When one failure becomes many - decision support for city control rooms. Simulated demo data; the planner decides.</p>
+</header>
+<main>
+  <section class="panel">
+    <h2>SCENARIO</h2>
+    <label>Hazard</label>
+    <select id="hazard"><option>flood</option><option>storm</option><option>heatwave</option><option>fire</option><option>equipment fault</option></select>
+    <p class="note" id="hazardEffect"></p>
+    <label>Severity (affects repair time)</label>
+    <select id="severity"><option>low</option><option selected>medium</option><option>high</option></select>
+    <label>Horizon (hours)</label>
+    <input id="horizon" type="number" min="1" max="168" value="48">
+    <label>Initially failed assets</label>
+    <div class="assets" id="assetList"></div>
+    <button id="demo" class="ghost">Load demo: flood at North Substation</button>
+    <button id="run">Run simulation</button>
+    <button id="compare" class="secondary">Compare interventions</button>
+    <p class="note">Interventions are re-simulated from identical starting conditions and ranked with transparent weights (60% unserved service-hours, 30% critical facilities, 10% cost).</p>
+  </section>
+  <section>
+    <div class="panel">
+      <h2>NETWORK STATE <span id="hourLabel" style="font-weight:400;color:#59677b"></span></h2>
+      <div class="legend"><span><i style="background:#22c55e"></i>Working</span><span><i style="background:#f59e0b"></i>On backup</span><span><i style="background:#ef4444"></i>Failed</span><span><i class="dash"></i>Alternate supply switched on</span></div>
+      <svg id="map" viewBox="0 0 900 540"></svg>
+      <div class="player"><button id="play" class="small">&#9654; Play</button><input id="hour" type="range" min="0" max="0" value="0"></div>
+      <div id="critical"></div>
+      <div class="metrics" id="metrics"></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>RESPONSE PLANNING</h2>
+      <div class="row">
+        <div><label>Extra crews available</label><input id="crews" type="number" min="0" max="10" value="2"></div>
+        <div><label>Generators available</label><input id="generators" type="number" min="0" max="10" value="2"></div>
+        <div><label>Budget (&#8377;)</label><input id="budget" type="number" min="0" step="5000" value="60000"></div>
+        <div><button id="planBtn">Plan response</button></div>
+      </div>
+      <div id="planOut"></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>FIELD UPDATE</h2>
+      <p class="note">Add what field teams confirm, then update the scenario. The plan is recalculated and compared with the previous one.</p>
+      <div class="row">
+        <div><label>Report</label><select id="repKind"><option value="repair_delayed">Repair delayed</option><option value="asset_down">Asset found failed</option><option value="backup_left">Backup left (hours)</option></select></div>
+        <div><label>Asset</label><select id="repAsset"></select></div>
+        <div><label>Reported at hour</label><input id="repHour" type="number" min="1" max="168" value="3"></div>
+        <div><label id="repHoursLabel">Delay (hours)</label><input id="repHours" type="number" min="0" max="168" value="6"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><button id="addReportBtn" class="ghost">Add report</button></div>
+        <div><button id="replanBtn">Update scenario &amp; re-plan</button></div>
+      </div>
+      <ul class="reports" id="reportList"></ul>
+      <div id="changeOut"></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>EVIDENCE LEDGER</h2>
+      <div class="ledger"><table id="ledger"><thead><tr><th>#</th><th>Hour</th><th>Asset</th><th>Change</th><th>Cause</th><th>Rule</th><th>Basis</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="panel" style="margin-top:16px" id="comparePanel" hidden>
+      <h2>INTERVENTION LAB</h2>
+      <table id="options"><thead><tr><th>Rank</th><th>Option</th><th>Service-hours lost (person-hours)</th><th>Critical facility outage hours</th><th>Full recovery</th><th>Cost (&#8377;)</th><th>Score</th></tr></thead><tbody></tbody></table>
+      <h2 style="margin-top:14px">EXPLANATION (template from ledger)</h2>
+      <div class="explain" id="explanation"></div>
+    </div>
+  </section>
+</main>
+<script>
+const colors = {operational:"#22c55e", on_backup:"#f59e0b", failed:"#ef4444"};
+let network, hazards = {}, timeline = [], reports = [], lastPlan = null;
+
+async function api(path, body) {
+  const res = await fetch(path, body ? {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)} : {});
+  if (!res.ok) {
+    const detail = (await res.json().catch(() => ({}))).detail;
+    // FastAPI returns a string for HTTPException and a list of {loc,msg} for validation errors.
+    const msg = Array.isArray(detail) ? detail.map(d => `${d.loc.slice(1).join(".")}: ${d.msg}`).join("\n") : detail;
+    throw new Error(msg || res.statusText);
+  }
+  return res.json();
+}
+
+function scenario() {
+  const failed = [...document.querySelectorAll("#assetList input:checked")].map(i => i.value);
+  if (!failed.length) throw new Error("Select at least one asset to fail.");
+  return {hazard: hazard.value, severity: severity.value, horizon_hours: +horizon.value, failed_assets: failed, reports};
+}
+
+function esc(v) { return String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function drawMap(states, activeEdges) {
+  const byId = Object.fromEntries(network.assets.map(a => [a.id, a]));
+  const active = new Set(activeEdges || network.edges.filter(e => e.active).map(e => e.id));
+  let out = "";
+  for (const e of network.edges) {
+    if (!active.has(e.id)) continue;  // alternate links are hidden until switched on
+    const s = byId[e.supplier], d = byId[e.dependent];
+    const alt = !e.active;
+    out += `<line x1="${s.x}" y1="${s.y}" x2="${d.x}" y2="${d.y}" stroke="${alt ? "#0d9488" : "#cbd5e1"}" stroke-width="${alt ? 2.2 : 1.3}" ${alt ? 'stroke-dasharray="6 4"' : ""}/>`;
+  }
+  for (const a of network.assets) {
+    const st = states ? states[a.id] : "operational";
+    out += `<g><title>${esc(a.name)} (${esc(a.type)}) - ${st}</title><circle cx="${a.x}" cy="${a.y}" r="16" fill="${colors[st]}" stroke="#fff" stroke-width="2"/>
+      <text x="${a.x}" y="${a.y + 4}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${a.id}</text>
+      <rect x="${a.x - 58}" y="${a.y + 20}" width="116" height="14" rx="3" fill="#fbfcff" fill-opacity="0.9"/>
+      <text x="${a.x}" y="${a.y + 31}" text-anchor="middle" font-size="10" fill="#334155">${esc(a.name)}</text></g>`;
+  }
+  map.innerHTML = out;
+}
+
+function showHour(t) {
+  const snap = timeline[t];
+  hourLabel.textContent = snap ? `- hour ${t}` : "";
+  drawMap(snap && snap.states, snap && snap.active_edges);
+}
+
+function money(n) { return n.toLocaleString(); }
+
+const SERVICE_LABEL = {residential: "Homes without power/water", telecom: "Mobile users without signal",
+  healthcare: "Patients at affected hospitals", shelter: "Shelter capacity lost", coordination: "Emergency staff affected"};
+
+async function run() {
+  try {
+    stop();
+    const r = await api("/api/simulate", scenario());
+    timeline = r.timeline;
+    hour.max = timeline.length - 1; hour.value = 0; showHour(0);
+    const i = r.impact;
+    const peak = Object.entries(i.peak_people_without_service_by_service)
+      .map(([k, v]) => `<div class="metric"><b>${money(v)}</b><span>${SERVICE_LABEL[k] || k} (peak)</span></div>`);
+    metrics.innerHTML = peak.concat([
+      `<div class="metric"><b>${i.critical_facilities_down.length}</b><span>Critical facilities that fail</span></div>`,
+      `<div class="metric"><b>${i.recovered_within_horizon ? "hour " + i.recovery_hour : "not within " + (timeline.length - 1) + "h"}</b><span>Full recovery</span></div>`]).join("");
+    critical.innerHTML = i.critical_facilities_down.length ? `<table><thead><tr><th>Critical facility</th><th>Fails at</th><th>Hours without service</th></tr></thead><tbody>` +
+      i.critical_facilities_down.map(f => `<tr><td>${esc(f.name)}</td><td>hour ${f.first_failed_hour}</td><td>${f.outage_hours}</td></tr>`).join("") + "</tbody></table>"
+      : '<p class="note">No critical facility loses service in this scenario.</p>';
+    document.querySelector("#ledger tbody").innerHTML = r.ledger.map(e =>
+      `<tr><td>${e.id}</td><td>${e.t}</td><td>${esc(e.asset_name)}</td><td><span class="tag ${e.type === "intervention" ? "intervention" : e.type === "field" ? "field" : e.to}">${e.type === "intervention" ? "intervention" : e.from === e.to ? "field report" : e.from + " -> " + e.to}</span></td><td>${esc(e.cause)}</td><td>${esc(e.rule)}</td><td class="basis">${e.basis}</td></tr>`).join("");
+    comparePanel.hidden = true;
+  } catch (err) { alert(err.message); }
+}
+
+let player = null;
+function stop() { if (player) { clearInterval(player); player = null; } play.innerHTML = "&#9654; Play"; }
+function togglePlay() {
+  if (player) return stop();
+  if (+hour.value >= +hour.max) { hour.value = 0; showHour(0); }
+  play.innerHTML = "&#10074;&#10074; Pause";
+  player = setInterval(() => {
+    if (+hour.value >= +hour.max) return stop();
+    hour.value = +hour.value + 1; showHour(+hour.value);
+  }, 350);
+}
+
+function showHazard() {
+  const h = hazards[hazard.value];
+  hazardEffect.textContent = h ? "Assumption: " + h : "";
+}
+
+function resources() {
+  return {crews: +crews.value, generators: +generators.value, budget: +budget.value};
+}
+
+function facilities(impact) {
+  const f = impact.critical_facilities_down;
+  return f.length ? f.map(x => `${esc(x.name)} fails at hour ${x.first_failed_hour} (${x.outage_hours}h without service)`).join("; ")
+    : "no critical facility loses service";
+}
+
+function planTable(p) {
+  if (!p.actions.length) return '<p class="note">No action fits the resources, or no action improves on doing nothing.</p>';
+  return `<table><thead><tr><th>Action</th><th>When</th><th>Uses</th><th>Cost (&#8377;)</th></tr></thead><tbody>` +
+    p.actions.map(a => `<tr><td>${esc(a.label)}</td><td>${esc(a.timing)}</td><td>1 ${a.uses === "crews" ? "crew" : "generator"}</td><td>${money(a.cost)}</td></tr>`).join("") + "</tbody></table>";
+}
+
+function renderPlan(r) {
+  const b = r.best, base = r.baseline_impact;
+  planOut.innerHTML = planTable(b) + `<div class="plan-summary"><b>Recommended plan</b> (score ${b.score}, ${r.plans_checked} plans checked):
+    uses ${b.crews_used} of ${r.resources.crews} crews, ${b.generators_used} of ${r.resources.generators} generators and &#8377;${money(b.cost)} of &#8377;${money(r.resources.budget)}.
+    It avoids ${b.avoided_unserved_pct}% of lost service-hours and ${b.avoided_critical_pct}% of critical-facility outage hours compared with no action.<br>
+    <b>With this plan:</b> ${facilities(b.impact)}; full recovery ${b.impact.recovered_within_horizon ? "at hour " + b.impact.recovery_hour : "not within the horizon"}.<br>
+    <b>With no action:</b> ${facilities(base)}; full recovery ${base.recovered_within_horizon ? "at hour " + base.recovery_hour : "not within the horizon"}.</div>` +
+    (r.alternatives.length ? `<p class="note">Next best: ${r.alternatives.map(a => `${a.actions.length ? a.actions.map(x => esc(x.label)).join(" + ") : "no action"} (score ${a.score}, &#8377;${money(a.cost)})`).join(" &middot; ")}</p>` : "") +
+    `<p class="note">Weights: ${r.weights.unserved}% service-hours lost, ${r.weights.critical}% critical-facility outage, ${r.weights.cost}% cost. Rule-based simulation on demo data; the planner approves.</p>`;
+}
+
+async function planResponse() {
+  try {
+    const r = await api("/api/plan", Object.assign(scenario(), resources()));
+    lastPlan = r.best; renderPlan(r); changeOut.innerHTML = "";
+  } catch (err) { alert(err.message); }
+}
+
+const REPORT_TEXT = {
+  repair_delayed: r => `Hour ${r.hour}: repair of ${assetName(r.asset)} delayed by ${r.hours}h`,
+  asset_down: r => `Hour ${r.hour}: ${assetName(r.asset)} found failed`,
+  backup_left: r => `Hour ${r.hour}: ${assetName(r.asset)} has only ${r.hours}h of backup left`};
+function assetName(id) { return (network.assets.find(a => a.id === id) || {name: id}).name; }
+
+function renderReports() {
+  reportList.innerHTML = reports.map((r, i) => `<li><span>${esc(REPORT_TEXT[r.kind](r))}</span><button data-i="${i}">Remove</button></li>`).join("");
+  reportList.querySelectorAll("button").forEach(b => b.onclick = () => { reports.splice(+b.dataset.i, 1); renderReports(); });
+}
+
+function syncReportForm() {
+  repHoursLabel.textContent = repKind.value === "backup_left" ? "Backup left (hours)" : "Delay (hours)";
+  repHours.disabled = repKind.value === "asset_down";
+}
+
+function addReport() {
+  const r = {kind: repKind.value, asset: repAsset.value, hour: +repHour.value, hours: repKind.value === "asset_down" ? 0 : +repHours.value};
+  reports.push(r); renderReports();
+}
+
+async function replan() {
+  if (!lastPlan) { alert("Run 'Plan response' first, so the new plan can be compared with it."); return; }
+  if (!reports.length) { alert("Add at least one field report first."); return; }
+  try {
+    const previous_plan = lastPlan.actions.map(a => ({kind: a.kind, target: a.target, hours: a.hours}));
+    const r = await api("/api/plan", Object.assign(scenario(), resources(), {previous_plan}));
+    await run();
+    const old = r.previous_plan, now = r.best;
+    const same = old.feasible && JSON.stringify(old.actions.map(a => a.target + a.kind)) === JSON.stringify(now.actions.map(a => a.target + a.kind));
+    let oldText = old.feasible
+      ? `Under the new conditions the previous plan scores ${old.score}: ${facilities(old.impact)}.`
+      : `The previous plan no longer works: ${old.problems.map(esc).join("; ")}.`;
+    renderPlan(r);
+    changeOut.innerHTML = `<div class="changed"><b>What changed after the field update</b><br>${oldText}<br>` +
+      (same ? `<b>The recommendation stays the same</b> (score ${now.score}).`
+            : `<b>New recommendation</b> (score ${now.score}): ${now.actions.length ? now.actions.map(a => esc(a.label)).join(" + ") : "no action"}; ${facilities(now.impact)}.`) + "</div>";
+    lastPlan = now;
+  } catch (err) { alert(err.message); }
+}
+
+function loadDemo() {
+  reports = []; renderReports(); lastPlan = null; planOut.innerHTML = ""; changeOut.innerHTML = "";
+  hazard.value = "flood"; severity.value = "medium"; horizon.value = 48; showHazard();
+  document.querySelectorAll("#assetList input").forEach(i => { i.checked = i.value === "S1"; });
+  run().then(togglePlay);
+}
+
+async function compare() {
+  try {
+    await run();
+    const r = await api("/api/compare", scenario());
+    document.querySelector("#options tbody").innerHTML = r.options.map(o => o.feasible
+      ? `<tr class="${o.rank === 1 ? "best" : ""}"><td>${o.rank}</td><td>${esc(o.label)}</td><td>${money(o.impact.total_unserved_service_person_hours)} (${o.avoided_unserved_pct}% avoided)</td><td>${o.impact.critical_facility_outage_hours}</td><td>${o.impact.recovered_within_horizon ? "hour " + o.impact.recovery_hour : "not within horizon"}</td><td>${money(o.cost)}</td><td>${o.score}</td></tr>`
+      : `<tr><td>-</td><td>${esc(o.label)}</td><td colspan="5"><span class="tag failed">infeasible</span> ${esc(o.reason)}</td></tr>`).join("");
+    explanation.textContent = r.explanation;
+    comparePanel.hidden = false;
+  } catch (err) { alert(err.message); }
+}
+
+(async () => {
+  network = await api("/api/network");
+  hazards = await api("/api/hazards");
+  assetList.innerHTML = network.assets.map(a =>
+    `<label><input type="checkbox" value="${a.id}" ${a.id === "S1" ? "checked" : ""}> ${a.id} - ${a.name}</label>`).join("");
+  drawMap();
+  showHazard();
+  hazard.onchange = showHazard;
+  hour.oninput = () => { stop(); showHour(+hour.value); };
+  play.onclick = togglePlay;
+  document.getElementById("demo").onclick = loadDemo;
+  repAsset.innerHTML = network.assets.map(a => `<option value="${a.id}">${a.id} - ${esc(a.name)}</option>`).join("");
+  repKind.onchange = syncReportForm; syncReportForm();
+  document.getElementById("addReportBtn").onclick = addReport;
+  document.getElementById("planBtn").onclick = planResponse;
+  document.getElementById("replanBtn").onclick = replan;
+  document.getElementById("run").onclick = run;
+  document.getElementById("compare").onclick = compare;
+  run();
+})();
+</script>
+</body>
+</html>
