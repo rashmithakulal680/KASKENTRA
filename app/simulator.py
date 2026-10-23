@@ -55,7 +55,10 @@ NEUTRAL_HAZARD = HAZARDS["equipment fault"]
 
 
 def hazard_profile(name: str) -> HazardProfile:
-    return HAZARDS.get(name, NEUTRAL_HAZARD)
+    """Profile for a known hazard. Unknown names are an error, never a silent default."""
+    if name not in HAZARDS:
+        raise ValueError(f"unknown hazard {name!r}; expected one of: {', '.join(HAZARDS)}")
+    return HAZARDS[name]
 
 
 @dataclass(frozen=True)

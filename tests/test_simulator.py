@@ -88,7 +88,7 @@ def test_cyclic_dependencies_terminate():
     assets = {i: Asset(i, i, "pump", "water", 10, 100, 0, 5, 0, 0) for i in ("A", "B")}
     edges = {"A-B": Edge("A-B", "A", "B", 1), "B-A": Edge("B-A", "B", "A", 1)}
     graph = nx.DiGraph([("A", "B"), ("B", "A")])
-    r = simulate(Network(assets, edges, graph), Scenario("fault", "low", ("A",), 12))
+    r = simulate(Network(assets, edges, graph), Scenario("equipment fault", "low", ("A",), 12))
     assert len(r.timeline) == 13
     assert not r.impact["recovered_within_horizon"]  # deadlock is reported, not hidden
 

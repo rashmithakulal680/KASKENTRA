@@ -60,6 +60,9 @@
   .scroll{max-height:260px;overflow:auto}
   .pin{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px #0005;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1}
   .pin.sel{outline:3px solid var(--brand);outline-offset:1px}
+  #errorBar{position:sticky;top:0;z-index:2000;margin:10px 24px 0;display:flex;gap:12px;align-items:flex-start;justify-content:space-between;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:14px}
+  #errorBar[hidden]{display:none}
+  #errorBar button{background:none;color:#991b1b;border:0;font-size:20px;line-height:1;padding:0 4px}
   @media (max-width:980px){main{grid-template-columns:1fr}.mapcol{position:static}#map{height:380px}.grid4{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -68,6 +71,8 @@
   <h1>KASKENTRA</h1>
   <p>When one failure becomes many: coordinating the response when critical city services fail. Decision support for disaster-management authorities and city control rooms. Demo data; the planner decides.</p>
 </header>
+
+<div id="errorBar" aria-live="polite" hidden><span id="errorText"></span><button id="errorClose" type="button" aria-label="Dismiss error">&times;</button></div>
 
 <nav class="steps" id="steps">
   <button class="step" data-step="1"><b>1</b>Infrastructure Map</button>
@@ -305,7 +310,7 @@ function renderImpact(r) {
   const label = {residential: "Homes without supply", telecom: "Mobile users without signal", healthcare: "Patients at affected hospitals", shelter: "Shelter places lost", coordination: "Emergency staff affected"};
   impactOut.innerHTML = `<p class="note">Cause: ${esc(hazard.value)} at ${esc(byId[asset.value].name)}. ${esc(i.hazard_effect)}</p>` +
     `<table><thead><tr><th>Affected service</th><th>Zone</th><th>Backup time</th><th>Status</th><th>Restored</th></tr></thead><tbody>` +
-    rows.map(x => `<tr${x.critical ? ' style="font-weight:600"' : ""}><td>${ICONS[x.type] || ""} ${esc(x.name)}</td><td>${esc(x.zone)}</td><td>${x.backup_hours ? x.backup_hours + " h" : "none"}</td><td>${statusOf(x)}</td><td>${x.restored_at === null ? "after " + (timeline.length - 1) + " h" : hr(x.restored_at)}</td></tr>`).join("") +
+    rows.map(x => `<tr${x.critical ? ' style="font-weight:600"' : ""}><td>${ICONS[x.type] || ""} ${esc(x.name)}</td><td>${esc(x.zone)}</td><td>${x.backup_hours ? x.backup_hours + " h" : "none"}</td><td>${statusOf(x)}</td><td>${x.restored_at === null ? "not within " + (timeline.length - 1) + " h" : hr(x.restored_at)}</td></tr>`).join("") +
     `</tbody></table><div class="metrics">` +
     Object.entries(peak).map(([k, v]) => `<div class="metric"><b>${money(v)}</b><span>${label[k] || k} (peak)</span></div>`).join("") +
     `<div class="metric"><b>${i.critical_facilities_down.length}</b><span>Critical facilities that fail</span></div>` +
@@ -403,7 +408,7 @@ async function showAlerts(list) {
     const shown = [...alertsOut.querySelectorAll(".alert")].map(el => +el.dataset.id);
     const all = Object.fromEntries((await api("/api/alerts")).map(a => [a.id, a]));
     await showAlerts(shown.map(id => all[id]).filter(Boolean));
-  }));
+  }, b));
 }
 async function draftAlerts() {
   const drafts = await api("/api/alerts/draft", scenario());
@@ -411,7 +416,18 @@ async function draftAlerts() {
 }
 
 /* ---------- wiring ---------- */
-async function guard(fn) { try { await fn(); } catch (err) { alert(err.message); } }
+function showError(message) { errorText.textContent = message; errorBar.hidden = false; }
+function clearError() { errorBar.hidden = true; errorText.textContent = ""; }
+
+/* Run an action: clear old errors, show "Working..." on the clicked button, report failures inline. */
+async function guard(fn, button) {
+  clearError();
+  const label = button ? button.innerHTML : null;
+  if (button) { button.disabled = true; button.textContent = "Working..."; }
+  try { await fn(); }
+  catch (err) { showError(err.message); }
+  finally { if (button) { button.disabled = false; button.innerHTML = label; } }
+}
 
 function showHazard() { hazardEffect.textContent = hazards[hazard.value] ? "Assumption: " + hazards[hazard.value] : ""; }
 
@@ -433,12 +449,13 @@ async function loadDemo() {
   asset.onchange = draw; hazard.onchange = showHazard; repKind.onchange = syncReportForm;
   hour.oninput = () => { stop(); draw(); };
   play.onclick = togglePlay;
-  document.getElementById("simulate").onclick = () => guard(() => simulateFailure(false));
-  demo.onclick = () => guard(loadDemo);
-  planBtn.onclick = () => guard(recommendPlan);
-  addReportBtn.onclick = () => guard(addReport);
-  replanBtn.onclick = () => guard(replan);
-  draftBtn.onclick = () => guard(draftAlerts);
+  document.getElementById("simulate").onclick = e => guard(() => simulateFailure(false), e.currentTarget);
+  demo.onclick = e => guard(loadDemo, e.currentTarget);
+  planBtn.onclick = e => guard(recommendPlan, e.currentTarget);
+  addReportBtn.onclick = e => guard(addReport, e.currentTarget);
+  replanBtn.onclick = e => guard(replan, e.currentTarget);
+  draftBtn.onclick = e => guard(draftAlerts, e.currentTarget);
+  errorClose.onclick = clearError;
   document.querySelectorAll(".step").forEach(s => s.onclick = () => {
     document.getElementById("s" + s.dataset.step).scrollIntoView({behavior: "smooth", block: "start"}); mark(s.dataset.step); });
 })();

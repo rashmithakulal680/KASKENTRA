@@ -4,7 +4,7 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app import store
 from app.alerts import draft_warnings
@@ -50,6 +50,9 @@ class PlanRequest(ScenarioRequest):
 
 
 def to_scenario(req: ScenarioRequest) -> Scenario:
+    if req.hazard not in HAZARDS:
+        raise HTTPException(400, f"unknown hazard {req.hazard!r}; expected one of: "
+                                 f"{', '.join(HAZARDS)}")
     unknown = [a for a in req.failed_assets if a not in NETWORK.assets]
     unknown += [r.asset for r in req.reports if r.asset not in NETWORK.assets]
     if unknown:
@@ -76,6 +79,11 @@ def to_scenario(req: ScenarioRequest) -> Scenario:
                 raise HTTPException(400, f"{name} is already repaired by hour {planned}; "
                                          f"a delay reported at hour {r.hour} comes too late")
     return Scenario(req.hazard, req.severity, failed, req.horizon_hours, reports)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "assets": len(NETWORK.assets)}
 
 
 @app.get("/")
@@ -139,7 +147,15 @@ def plan(req: PlanRequest):
 
 class DecisionModel(BaseModel):
     decision: Literal["approve", "reject"]
-    decided_by: str = Field(min_length=2, max_length=60)
+    decided_by: str = Field(max_length=60)
+
+    @field_validator("decided_by")
+    @classmethod
+    def name_has_two_characters(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("approver name must have at least 2 characters")
+        return value
 
 
 @app.post("/api/reports")
@@ -175,7 +191,7 @@ def decide(alert_id: int, req: DecisionModel):
     alert = store.get_alert(alert_id)
     if alert is None:
         raise HTTPException(404, "warning draft not found")
-    decided = store.decide_alert(alert_id, req.decision, req.decided_by.strip())
+    decided = store.decide_alert(alert_id, req.decision, req.decided_by)
     if decided is None:
         raise HTTPException(409, f"this draft is already {alert['status']}")
     return decided
