@@ -28,6 +28,9 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 DEFAULT_MODEL = "openai/gpt-oss-20b"
 TIMEOUT_S = 20
 MAX_SENTENCES = 4  # a briefing is read aloud in a control room; longer than this is noise
+# gpt-oss models think before they answer and that thinking counts towards this limit, so it
+# must leave room for the reply itself (400 cut replies off mid-sentence)
+MAX_COMPLETION_TOKENS = 1200
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z₹\d])")
 MARKDOWN = re.compile(r"[*_`#>]+|^\s*[-•]\s+", re.MULTILINE)
@@ -164,6 +167,22 @@ SYSTEM_PROMPT = (
     "other or equally good plans; the screen lists those separately.")
 
 
+class IncompleteReply(Exception):
+    """Groq stopped before the reply was finished (token limit)."""
+
+
+def missing_key_facts(text: str, facts: dict) -> list[str]:
+    """A briefing must be a finished sentence and must state both recovery hours."""
+    problems = []
+    if not text.rstrip().endswith((".", "!", "?")):
+        problems.append("it stops mid-sentence")
+    for label, hour in (("no-action recovery hour", facts["no_action"]["full_recovery_hour"]),
+                        ("plan recovery hour", facts["recommended_plan"]["full_recovery_hour"])):
+        if hour is not None and str(hour) not in NUMBER.findall(text):
+            problems.append(f"it does not give the {label} ({hour})")
+    return problems
+
+
 def call_groq(facts: dict, api_key: str, model: str) -> str:
     """One chat-completions request to Groq. Raises on any network or API error."""
     body = {
@@ -171,7 +190,7 @@ def call_groq(facts: dict, api_key: str, model: str) -> str:
         "messages": [{"role": "system", "content": SYSTEM_PROMPT},
                      {"role": "user", "content": json.dumps(facts, ensure_ascii=False)}],
         "temperature": 0.2,
-        "max_completion_tokens": 400,
+        "max_completion_tokens": MAX_COMPLETION_TOKENS,
     }
     if model.startswith("openai/gpt-oss"):
         body["reasoning_effort"] = "low"
@@ -182,7 +201,10 @@ def call_groq(facts: dict, api_key: str, model: str) -> str:
                  "User-Agent": "kaskentra"})
     with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response:
         data = json.loads(response.read().decode("utf-8"))
-    return (data["choices"][0]["message"].get("content") or "").strip()
+    choice = data["choices"][0]
+    if choice.get("finish_reason") == "length":
+        raise IncompleteReply()
+    return (choice["message"].get("content") or "").strip()
 
 
 def summarise(facts: dict) -> dict:
@@ -200,6 +222,9 @@ def summarise(facts: dict) -> dict:
         return {**template, "note": "No GROQ_API_KEY set, so the fixed template was used."}
     try:
         text = tidy_ai_text(call_groq(facts, key, model))
+    except IncompleteReply:
+        return {**template, "note": "The AI reply was cut off by its length limit, so the fixed "
+                                    "template was used."}
     except urllib.error.HTTPError as e:
         return {**template, "note": f"Groq returned HTTP {e.code}, so the fixed template was used."}
     except Exception as e:  # no internet, timeout, unexpected reply
@@ -212,6 +237,10 @@ def summarise(facts: dict) -> dict:
         return {**template, "rejected_ai_text": text,
                 "note": f"AI text rejected: it contained {', '.join(bad)}, which is not in the "
                         f"computed results. The fixed template was used."}
+    incomplete = missing_key_facts(text, facts)
+    if incomplete:
+        return {**template, "rejected_ai_text": text,
+                "note": f"AI text rejected: {'; '.join(incomplete)}. The fixed template was used."}
     return {"text": text, "lines": SENTENCE_END.split(text), "source": "ai", "model": model,
             "note": f"Written by {model} on Groq from the computed results; every number in it "
                     f"was checked against them."}
